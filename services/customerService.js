@@ -1,5 +1,6 @@
 const { connection } = require('../config/dbConnection');
 const { createNewEventinStaffCalendar, getEvents, getSpecialistEvents, checkAvailability, } = require('./calendarService');
+const {convertServicesFormat } = require('../utils/responseFormatter');
 const crypto = require('crypto');
 const moment = require('moment');
 
@@ -20,21 +21,7 @@ const getAllServices = async () => {
     }
 }
 
-const convertServicesFormat = async (services) => {
-    try {
-        return services.map(({ SERVICE_CODE: serviceCode, SERVICE_NAME: serviceName, SERVICE_DURATION: duration, SERVICE_BASED_PRICE: price }) => {
-            return {
-                serviceCode,
-                serviceName,
-                duration,
-                price,
-            }
-        });
-    } catch (err) {
-        throw new Error('Failed to Convert Services Format');
-    }
 
-}
 
 const getMatchSpecialists = async (selectedServices) => {
     try {

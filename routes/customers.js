@@ -4,6 +4,7 @@ const router = express.Router();
 
 const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, } = require('../controllers/customerController');
 const { getCalendar, createNewCalendar, checkTimeAvailability } = require('../services/calendarService');
+
 //This register, appointment new, and general feedback, no need middleware
 
 //COMBINE CUSTOMER ENDPOINT WITH GUEST

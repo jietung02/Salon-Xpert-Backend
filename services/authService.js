@@ -1,10 +1,10 @@
 const bcrypt = require('bcrypt');
 const { connection } = require('../config/dbConnection');
-
+const { adminPermissions } = require('../utils/adminPermissions');
 
 const getGuestAuthData = async () => {
     try {
-        
+
         return {
             isAuthenticated: 'guest',
             username: null,
@@ -17,7 +17,7 @@ const getGuestAuthData = async () => {
             permissions: [
                 {
                     rolePermission: 'Guest Dashboard',
-                    functions:[{name: 'Book Appointment' , route: 'guest/new-appointment'},{name: 'General Feedback' , route: 'guest/general-feedback'}]
+                    functions: [{ name: 'Book Appointment', route: 'guest/new-appointment' }, { name: 'General Feedback', route: 'guest/general-feedback' }]
                 },
             ],
             token: null,
@@ -128,7 +128,8 @@ const getUserData = async (userId, role) => {
         //     return userData;
         // }
         else {
-            throw new Error('Invalid Role');
+            return null;
+            // throw new Error('Invalid Role');
         }
 
     } catch (err) {
@@ -153,6 +154,9 @@ const fetchUserPermissions = async (userId, role) => {
             return permissions;
         }
         else if (role === 'admin') {
+            const permissions = getAdminPermission();
+
+            return permissions;
             // return the hard coded access to admin
         }
         else if (role === 'staff') {
@@ -175,6 +179,10 @@ const fetchUserPermissions = async (userId, role) => {
         console.log(err);
         throw new Error(err.message);
     }
+}
+
+const getAdminPermission = () => {
+    return adminPermissions;
 }
 
 const convertPermissionsFormat = async (permissions, role) => {
