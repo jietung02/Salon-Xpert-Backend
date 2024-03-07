@@ -51,6 +51,28 @@ const createNewService = async (serviceDetails) => {
     } catch (err) {
         throw new Error(err.message);
     }
-}
+};
 
-module.exports = { fetchAllSalonServices, createNewService };
+const editExistingService = async (serviceDetails) => {
+    try {
+        const { serviceCode, serviceName, serviceDuration, serviceBasedPrice } = serviceDetails;
+        const sql = "UPDATE SERVICE SET SERVICE_CODE = ?, SERVICE_NAME = ?, SERVICE_DURATION = ?, SERVICE_BASED_PRICE = ? WHERE SERVICE_CODE = ?";
+
+        const [newServiceResult] = await connection.execute(sql, [serviceCode, serviceName, serviceDuration, serviceBasedPrice, serviceCode]);
+        const rowAffected = newServiceResult.affectedRows;
+
+        if (rowAffected <= 0) {
+            throw new Error('Failed to Update Service Table');
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Updated Service',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+module.exports = { fetchAllSalonServices, createNewService, editExistingService, };

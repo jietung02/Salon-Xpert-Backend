@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService, } = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService,editService, } = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -24,12 +24,12 @@ router.post('/services/new', async (req, res) => {
     const serviceDetails = req.body;
 
     if (serviceDetails === undefined || serviceDetails === null) {
-      return res.status(400).json({ status: 'error', message: 'Missing Required Service Details'});
+      return res.status(400).json({ status: 'error', message: 'Missing Required Service Details' });
     }
     const { serviceCode, serviceName, serviceDuration, serviceBasedPrice } = serviceDetails;
 
     if (serviceCode === null || serviceName === null || serviceDuration === null || serviceBasedPrice === null) {
-      return res.status(400).json({ status: 'error', message: 'Missing Required Service Details'});
+      return res.status(400).json({ status: 'error', message: 'Missing Required Service Details' });
     }
 
     const response = await addNewService(serviceDetails);
@@ -37,7 +37,7 @@ router.post('/services/new', async (req, res) => {
     return res.status(200).json(response);
 
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message})
+    res.status(500).json({ status: 'error', message: error.message })
   }
 
 });
@@ -46,8 +46,28 @@ router
   .route('/services/:serviceCode')
   .get((req, res) => {
     res.send('Retrieve specific staff profile');
-  }).put((req, res) => {
-    res.send('Modify specific staff profile');
+  }).put(async (req, res) => {
+    try {
+      const serviceDetails = req.body;
+  
+      if (serviceDetails === undefined || serviceDetails === null) {
+        return res.status(400).json({ status: 'error', message: 'Missing Required Service Details' });
+      }
+      const { serviceCode, serviceName, serviceDuration, serviceBasedPrice } = serviceDetails;
+  
+      if (serviceCode === null || serviceName === null || serviceDuration === null || serviceBasedPrice === null) {
+        return res.status(400).json({ status: 'error', message: 'Missing Required Service Details' });
+      }
+  
+      const response = await editService(serviceDetails);
+  
+      return res.status(200).json(response);
+  
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message })
+    }
+
+
   }).delete((req, res) => {
     res.send('Delete specific staff profile');
   });
