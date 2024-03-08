@@ -75,4 +75,75 @@ const editExistingService = async (serviceDetails) => {
     }
 };
 
-module.exports = { fetchAllSalonServices, createNewService, editExistingService, };
+const deleteExistingService = async (serviceCode) => {
+    try {
+        const sql = "DELETE FROM SERVICE WHERE SERVICE_CODE = ?";
+
+        const [deleteServiceResult] = await connection.execute(sql, [serviceCode]);
+        const rowAffected = deleteServiceResult.affectedRows;
+
+        if (rowAffected <= 0) {
+            throw new Error('Failed to Delete Service from Service Table');
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Deleted the Service',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchAllStaffProfiles = async () => {
+    try {
+        const sql = "SELECT s.STAFF_ID AS staffId, u.USER_USERNAME AS staffUsername, s.STAFF_FULL_NAME AS staffName, r.ROLE_NAME AS staffRoleName, s.ROLE_CODE AS staffRoleCode, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS servicesProvided,GROUP_CONCAT(svc.SERVICE_CODE SEPARATOR ', ') AS serviceCodes, u.USER_EMAIL AS staffEmail, s.STAFF_CONTACT_NUMBER AS staffContact, s.STAFF_BIO AS staffBio FROM STAFF s INNER JOIN USER u ON s.USER_ID = u.USER_ID INNER JOIN ROLE r ON s.ROLE_CODE = r.ROLE_CODE LEFT JOIN STAFFSPECIALTY ss ON s.STAFF_ID = ss.STAFF_ID LEFT JOIN SERVICE svc ON ss.SERVICE_CODE = svc.SERVICE_CODE  GROUP BY s.STAFF_ID";
+
+
+        const [serviceResult] = await connection.execute(sql);
+
+        if (serviceResult === 0) {
+            return {
+                status: 'error',
+                message: 'No Profiles Found',
+                data: null,
+                additionalData: null,
+            }
+        }
+
+        const servicesData = serviceResult.map((value) => {
+            return [value.staffId, value.staffUsername, value.staffName, value.staffRoleName, value.servicesProvided, value.staffEmail, value.staffContact, value.staffBio];
+        });
+
+        const additionalData = serviceResult.map((value) => {
+            return {
+                staffId: value.staffId,
+                staffUsername: value.staffUsername,
+                staffName: value.staffName,
+                staffRoleCode: value.staffRoleCode,
+                serviceCodes: value.serviceCodes,
+                staffEmail: value.staffEmail,
+                staffContact: value.staffContact,
+                staffBio: value.staffBio,
+            }
+        });
+
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Staff Profiles',
+            data: {
+                headers: ['Staff ID', 'Username', 'Name', 'Role', 'Services Provided', 'Email', 'Contact Number', 'Bio'],
+                staffProfilesData: servicesData,
+                additionalData: additionalData,
+
+            }
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, };

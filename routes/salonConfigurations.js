@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService,editService, } = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, } = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -49,27 +49,40 @@ router
   }).put(async (req, res) => {
     try {
       const serviceDetails = req.body;
-  
+
       if (serviceDetails === undefined || serviceDetails === null) {
         return res.status(400).json({ status: 'error', message: 'Missing Required Service Details' });
       }
       const { serviceCode, serviceName, serviceDuration, serviceBasedPrice } = serviceDetails;
-  
+
       if (serviceCode === null || serviceName === null || serviceDuration === null || serviceBasedPrice === null) {
         return res.status(400).json({ status: 'error', message: 'Missing Required Service Details' });
       }
-  
+
       const response = await editService(serviceDetails);
-  
+
       return res.status(200).json(response);
-  
+
     } catch (error) {
       res.status(500).json({ status: 'error', message: error.message })
     }
 
 
-  }).delete((req, res) => {
-    res.send('Delete specific staff profile');
+  }).delete(async (req, res) => {
+    try {
+      const serviceCode = req.params.serviceCode;
+
+      if (serviceCode === undefined || serviceCode === null) {
+        return res.status(400).json({ status: 'error', message: 'No Service Code Provided' });
+      }
+
+      const response = await deleteService(serviceCode);
+
+      return res.status(200).json(response);
+
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message })
+    }
   });
 
 
@@ -111,8 +124,17 @@ router
   });
 
 //Configure Staff Profile
-router.get('/staff-profiles', (req, res) => {
-  res.send('Retrieve all staff profiles');
+router.get('/staff-profiles', async (req, res) => {
+  try {
+    const response = await fetchAllProfiles();
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null, additionalData: null, })
+  }
 });
 
 router.post('/staff-profiles/new', (req, res) => {
