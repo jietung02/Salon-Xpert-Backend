@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, } = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, } = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -137,8 +137,54 @@ router.get('/staff-profiles', async (req, res) => {
   }
 });
 
-router.post('/staff-profiles/new', (req, res) => {
-  res.send('New staff profile');
+router.get('/staff-profiles/roles', async (req, res) => {
+  try {
+    const response = await fetchAllRoles();
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+router.get('/staff-profiles/services', async (req, res) => {
+  try {
+    const response = await fetchServices();
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+router.post('/staff-profiles/new', async (req, res) => {
+  try {
+    const profileDetails = req.body;
+
+    if (profileDetails === undefined || profileDetails === null) {
+      return res.status(400).json({ status: 'error', message: 'Missing Required Staff Profile Details', });
+    }
+
+    const { staffName, staffEmail, staffUsername, staffPassword, staffContact, staffRole, servicesProvided, staffBio } = profileDetails;
+
+    if (staffName === null || staffEmail === null || staffUsername === null || staffPassword === null || staffContact === null || staffRole === null || !Array.isArray(servicesProvided) || staffBio === null) {
+      return res.status(400).json({ status: 'error', message: 'Missing Required Staff Profile Details', });
+    }
+      const response = await createStaffProfile(profileDetails);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
 });
 
 router

@@ -1,4 +1,4 @@
-const { fetchAllSalonServices, createNewService,editExistingService, deleteExistingService,fetchAllStaffProfiles,} = require('../services/salonConfigurationService');
+const { fetchAllSalonServices, createNewService,editExistingService, deleteExistingService,fetchAllStaffProfiles,fetchAllAvailableRoles,fetchAllAvailableServices,} = require('../services/salonConfigurationService');
 
 const fetchAllServices = async () => {
     try {
@@ -45,4 +45,31 @@ const fetchAllProfiles = async () => {
     }
 }
 
-module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles,};
+const fetchAllRoles = async () => {
+    try {
+        const response = await fetchAllAvailableRoles();
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchServices = async () => {
+    try {
+        const response = await fetchAllAvailableServices();
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const createStaffProfile = async (profileDetails) => {
+    try {
+        const response = await createNewStaffProfile(profileDetails);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles,fetchAllRoles,fetchServices,createStaffProfile,};

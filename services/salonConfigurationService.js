@@ -146,4 +146,59 @@ const fetchAllStaffProfiles = async () => {
     }
 }
 
-module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, };
+const fetchAllAvailableRoles = async () => {
+    try {
+        const sql = "SELECT ROLE_CODE AS roleCode, ROLE_NAME AS roleName, ROLE_IS_SERVICE_PROVIDER AS roleIsServiceProvider FROM ROLE";
+
+        const [rolesResult] = await connection.execute(sql);
+        console.log(rolesResult)
+        if (rolesResult === 0) {
+            return {
+                status: 'error',
+                message: 'No Roles Found',
+                data: null,
+            }
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Roles',
+            data: rolesResult,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchAllAvailableServices = async () => {
+    try {
+        const sql = "SELECT SERVICE_CODE AS serviceCode, SERVICE_NAME AS serviceName FROM SERVICE";
+
+        const [servicesResult] = await connection.execute(sql);
+
+        if (servicesResult === 0) {
+            return {
+                status: 'error',
+                message: 'No Services Found',
+                data: null,
+            }
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Services',
+            data: servicesResult,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const createNewStaffProfile = async (profileDetails) => {
+    //register using auth service for user table,
+
+    // register staff, check if selected role is service provider, then generate a new calendar id
+}
+module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile,};
