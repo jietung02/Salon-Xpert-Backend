@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, } = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile ,} = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -176,7 +176,7 @@ router.post('/staff-profiles/new', async (req, res) => {
     if (staffName === null || staffEmail === null || staffUsername === null || staffPassword === null || staffContact === null || staffRole === null || !Array.isArray(servicesProvided) || staffBio === null) {
       return res.status(400).json({ status: 'error', message: 'Missing Required Staff Profile Details', });
     }
-      const response = await createStaffProfile(profileDetails);
+    const response = await createStaffProfile(profileDetails);
     if (response.status === 'error') {
       return res.status(404).json(response);
     }
@@ -191,10 +191,45 @@ router
   .route('/staff-profiles/:staffId')
   .get((req, res) => {
     res.send('Retrieve specific staff profile');
-  }).put((req, res) => {
-    res.send('Modify specific staff profile');
-  }).delete((req, res) => {
-    res.send('Delete specific staff profile');
+  }).put(async (req, res) => {
+
+    try {
+      const profileDetails = req.body;
+
+      if (profileDetails === undefined || profileDetails === null) {
+        return res.status(400).json({ status: 'error', message: 'Missing Required Staff Profile Details' });
+      }
+      const { staffId, staffUsername, staffName, staffEmail, staffRole, servicesProvided, staffContact, staffBio } = profileDetails;
+
+      if (staffId === null || staffUsername === null || staffName === null || staffEmail === null || staffRole === null || !Array.isArray(servicesProvided) || staffContact === null || staffBio === null) {
+        return res.status(400).json({ status: 'error', message: 'Missing Required Staff Profile Details' });
+      }
+
+      const response = await editStaffProfile(profileDetails);
+
+      return res.status(200).json(response);
+
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message })
+    }
+
+  }).delete(async (req, res) => {
+
+    try {
+      const staffId = req.params.staffId;
+
+      if (staffId === undefined || staffId === null) {
+        return res.status(400).json({ status: 'error', message: 'No Staff ID Provided' });
+      }
+
+      const response = await deleteStaffProfile(staffId);
+
+      return res.status(200).json(response);
+
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message })
+    }
+
   });
 
 

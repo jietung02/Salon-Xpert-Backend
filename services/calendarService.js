@@ -44,51 +44,50 @@ const getCalendar = async () => {
 
 }
 
-const createNewCalendar = async () => {
+const createNewCalendar = async (staffUsername) => {
     try {
-        const username = 'stylist2';
-        // const uri = process.env.GOOGLE_NEW_CALENDAR_URI;
 
         const response = await calendar.calendars.insert({
             requestBody: {
-                summary: 'TESTING21343',
+                summary: staffUsername,
                 timeZone: 'Asia/Kuala_Lumpur',
             }
         })
 
-        if (!response.ok) {
-            const calId = response.data.id;
-            console.log('Created Successfully');
-            console.log(calId)
-            const response2 = await calendar.acl.insert({
-                calendarId: calId,
-                requestBody: {
-                    role: 'owner',
-                    scope: {
-                        type: 'user',
-                        value: process.env.MANAGER_EMAIL
-                    }
+        if (response.status !== 200) {
+            throw new Error('Failed to Create a New Staff Calendar');
+        }
 
+        const calId = response.data.id;
+
+        const response2 = await calendar.acl.insert({
+            calendarId: calId,
+            requestBody: {
+                role: 'owner',
+                scope: {
+                    type: 'user',
+                    value: process.env.MANAGER_EMAIL
                 }
 
-            })
-            if (!response2.ok) {
-                console.log(response2)
-                console.log('Access Control Added');
+            }
+
+        })
+        console.log('Access Control Added');
+        if (response2.status !== 200) {
+            throw new Error('Failed to Share the Calendar with the Manager');
+        }
+        return {
+            status: 'success',
+            message: 'Successfully Created a New Calendar',
+            data: {
+                calendarId: calId,
             }
         }
 
-        // const response4 = await calendar.acl.get({
-        //     calendarId: 'primary',
-        //     ruleId: 'user:tungjm32@gmail.com'
-
-        // })
-
-        // console.log(response4)
 
 
-    } catch (error) {
-        console.log(error)
+    } catch (err) {
+        throw new Error(err.message);
     }
 
 }
@@ -148,7 +147,7 @@ const getSpecialistEvents = async (calId, date) => {
 const createNewEventinStaffCalendar = async (eventDetails) => {
     try {
         console.log(eventDetails)
-        const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime,endDateTime: selectedEndTime , servicesName, } = eventDetails;
+        const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, } = eventDetails;
 
         const startDateTime = new Date(selectedTime);
         const endDateTime = new Date(selectedEndTime);

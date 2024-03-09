@@ -44,8 +44,6 @@ const userRegistration = async (userData) => {
     } catch (err) {
         throw new Error(err.message);
     }
-
-
 };
 
 // const userData = {
