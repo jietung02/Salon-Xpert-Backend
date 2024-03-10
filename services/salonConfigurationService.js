@@ -5,11 +5,11 @@ const { createNewCalendar } = require('../services/calendarService');
 
 const fetchAllSalonServices = async () => {
     try {
-        const sql = "SELECT SERVICE_CODE AS serviceCode, SERVICE_NAME AS serviceName, SERVICE_DURATION AS serviceDuration, SERVICE_BASED_PRICE AS serviceBasedPrice FROM SERVICE";
+        const sql = "SELECT SERVICE_CODE AS serviceCode, SERVICE_NAME AS serviceName, SERVICE_DURATION AS serviceDuration, SERVICE_BASED_PRICE AS serviceBasedPrice FROM SERVICE ORDER BY serviceName";
 
         const [serviceResult] = await connection.execute(sql);
 
-        if (serviceResult === 0) {
+        if (serviceResult.length === 0) {
             return {
                 status: 'error',
                 message: 'No Services Found',
@@ -101,7 +101,7 @@ const deleteExistingService = async (serviceCode) => {
 
 const fetchAllStaffProfiles = async () => {
     try {
-        const sql = "SELECT s.STAFF_ID AS staffId, u.USER_USERNAME AS staffUsername, s.STAFF_FULL_NAME AS staffName, r.ROLE_NAME AS staffRoleName, s.ROLE_CODE AS staffRoleCode, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS servicesProvided,GROUP_CONCAT(svc.SERVICE_CODE SEPARATOR ', ') AS serviceCodes, u.USER_EMAIL AS staffEmail, s.STAFF_CONTACT_NUMBER AS staffContact, s.STAFF_BIO AS staffBio FROM STAFF s INNER JOIN USER u ON s.USER_ID = u.USER_ID INNER JOIN ROLE r ON s.ROLE_CODE = r.ROLE_CODE LEFT JOIN STAFFSPECIALTY ss ON s.STAFF_ID = ss.STAFF_ID LEFT JOIN SERVICE svc ON ss.SERVICE_CODE = svc.SERVICE_CODE  GROUP BY s.STAFF_ID";
+        const sql = "SELECT s.STAFF_ID AS staffId, u.USER_USERNAME AS staffUsername, s.STAFF_FULL_NAME AS staffName, r.ROLE_NAME AS staffRoleName, s.ROLE_CODE AS staffRoleCode, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS servicesProvided,GROUP_CONCAT(svc.SERVICE_CODE SEPARATOR ', ') AS serviceCodes, u.USER_EMAIL AS staffEmail, s.STAFF_CONTACT_NUMBER AS staffContact, s.STAFF_BIO AS staffBio FROM STAFF s INNER JOIN USER u ON s.USER_ID = u.USER_ID LEFT JOIN ROLE r ON s.ROLE_CODE = r.ROLE_CODE LEFT JOIN STAFFSPECIALTY ss ON s.STAFF_ID = ss.STAFF_ID LEFT JOIN SERVICE svc ON ss.SERVICE_CODE = svc.SERVICE_CODE GROUP BY staffId ORDER BY staffUsername";
 
 
         const [serviceResult] = await connection.execute(sql);
@@ -318,16 +318,6 @@ const editExistingStaffProfile = async (profileDetails) => {
         if (updateUserResult.affectedRows <= 0) {
             throw new Error('Failed to Update User Table');
         }
-        console.log('1')
-        //GET PREVIOUS ROLE
-        const sqlPrevRole = "SELECT r.ROLE_IS_SERVICE_PROVIDER AS isServiceProviderOld FROM ROLE r INNER JOIN STAFF s ON r.ROLE_CODE = s.ROLE_CODE WHERE STAFF_ID = ?";
-        const [oldIsServiceProviderResult] = await connection.execute(sqlPrevRole, [staffId])
-
-        if (!oldIsServiceProviderResult || oldIsServiceProviderResult.length === 0 || oldIsServiceProviderResult[0].isServiceProviderOld === undefined) {
-            throw new Error('Failed to Get Old Role Is Service Provider');
-        }
-        console.log('2')
-        const [{ isServiceProviderOld }] = oldIsServiceProviderResult;
 
         //IF PREVIOUS ROLE NOT SERVICE PROVIDER, GENERATE CALENDAR ID
         const sqlNewRole = "SELECT ROLE_IS_SERVICE_PROVIDER AS isServiceProviderNew FROM ROLE WHERE ROLE_CODE = ?";
@@ -336,49 +326,109 @@ const editExistingStaffProfile = async (profileDetails) => {
         if (!isServiceProviderResult || isServiceProviderResult.length === 0 || isServiceProviderResult[0].isServiceProviderNew === undefined) {
             throw new Error('Failed to Get New Is Service Provider');
         }
-        console.log('3')
+
         const [{ isServiceProviderNew }] = isServiceProviderResult;
 
-        //Old Role is Not Service Provider and New Role is, therefore need to generate a Calendar ID
-        if (isServiceProviderOld === 0 && isServiceProviderNew === 1) {
+        //GET PREVIOUS ROLE
+        const sqlPrevRole = "SELECT r.ROLE_IS_SERVICE_PROVIDER AS isServiceProviderOld FROM ROLE r INNER JOIN STAFF s ON r.ROLE_CODE = s.ROLE_CODE WHERE STAFF_ID = ?";
+        const [oldIsServiceProviderResult] = await connection.execute(sqlPrevRole, [staffId])
 
-            //GENERATE CALENDAR ID
-            const response = await createNewCalendar(profileDetails.staffUsername);
-            const calendarId = response.data.calendarId;
+        if (!oldIsServiceProviderResult || oldIsServiceProviderResult.length === 0 || oldIsServiceProviderResult[0].isServiceProviderOld === undefined) {
 
-            //UPDATE STAFF TABLE
-            const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ?, STAFF_CALENDAR_ID = ? WHERE STAFF_ID = ?";
-            const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, calendarId, staffId])
+            //CHECK CALENDAR ID (COULD BE PREVIOUSLY DELETED ROLE IS SERVICER PROVIDER) (TO DECIDE WHETHER NEED TO CREATE A NEW CALENDAR ID)
+            const calendarExitsql = "SELECT STAFF_CALENDAR_ID AS oldCalId FROM STAFF WHERE STAFF_ID = ?";
+            const [calResult] = await connection.execute(calendarExitsql, [staffId])
+            const [{oldCalId}] = calResult;
+            if (oldCalId === null && isServiceProviderNew === 1) {
 
-            if (updateStaffResult.affectedRows <= 0) {
-                throw new Error('Failed to Update Staff Table');
+                //GENERATE CALENDAR ID
+                const response = await createNewCalendar(staffUsername);
+                const calendarId = response.data.calendarId;
+
+                //UPDATE STAFF TABLE
+                const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ?, STAFF_CALENDAR_ID = ? WHERE STAFF_ID = ?";
+                const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, calendarId, staffId])
+
+                if (updateStaffResult.affectedRows <= 0) {
+                    throw new Error('Failed to Update Staff Table');
+                }
             }
 
-        }
+            else if (oldCalId === null && isServiceProviderNew === 0) {
 
-        //Old Role and New Role is Not Service Provider or Either Old Role and New Role is Service Provider, no changes needed
-        else if (isServiceProviderOld === 0 && isServiceProviderNew === 0 || isServiceProviderOld === 1 && isServiceProviderNew === 1) {
-            //UPDATE STAFF TABLE
-            const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ? WHERE STAFF_ID = ?";
-            const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, staffId])
+                //UPDATE STAFF TABLE
+                const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ? WHERE STAFF_ID = ?";
+                const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, staffId])
 
-            if (updateStaffResult.affectedRows <= 0) {
-                throw new Error('Failed to Update Staff Table');
+                if (updateStaffResult.affectedRows <= 0) {
+                    throw new Error('Failed to Update Staff Table');
+                }
+            }
+            else {
+
+                if (oldCalId !== null && isServiceProviderNew === 1) {
+
+                    //UPDATE STAFF TABLE
+                    const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ? WHERE STAFF_ID = ?";
+                    const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, staffId])
+
+                    if (updateStaffResult.affectedRows <= 0) {
+                        throw new Error('Failed to Update Staff Table');
+                    }
+                }
+                else if (oldCalId !== null && isServiceProviderNew === 0) {
+
+                    //UPDATE STAFF TABLE
+                    const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ?, STAFF_CALENDAR_ID = ? WHERE STAFF_ID = ?";
+                    const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, null, staffId])
+
+                    if (updateStaffResult.affectedRows <= 0) {
+                        throw new Error('Failed to Update Staff Table');
+                    }
+                }
             }
         }
+        else {
+            const [{ isServiceProviderOld }] = oldIsServiceProviderResult;
+            //Old Role is Not Service Provider and New Role is, therefore need to generate a Calendar ID
+            if (isServiceProviderOld === 0 && isServiceProviderNew === 1) {
 
-        //Old Role is Service Provider and New Role is Not, therefore need to Update Calendar ID to null
-        else if (isServiceProviderOld === 1 && isServiceProviderNew === 0) {
-            //UPDATE STAFF TABLE
-            const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ?, STAFF_CALENDAR_ID = ? WHERE STAFF_ID = ?";
-            const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, null, staffId])
+                //GENERATE CALENDAR ID
+                const response = await createNewCalendar(staffUsername);
+                const calendarId = response.data.calendarId;
 
-            if (updateStaffResult.affectedRows <= 0) {
-                throw new Error('Failed to Update Staff Table');
+                //UPDATE STAFF TABLE
+                const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ?, STAFF_CALENDAR_ID = ? WHERE STAFF_ID = ?";
+                const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, calendarId, staffId])
+
+                if (updateStaffResult.affectedRows <= 0) {
+                    throw new Error('Failed to Update Staff Table');
+                }
+
+            }
+
+            //Old Role and New Role is Not Service Provider or Either Old Role and New Role is Service Provider, no changes needed
+            else if (isServiceProviderOld === 0 && isServiceProviderNew === 0 || isServiceProviderOld === 1 && isServiceProviderNew === 1) {
+                //UPDATE STAFF TABLE
+                const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ? WHERE STAFF_ID = ?";
+                const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, staffId])
+
+                if (updateStaffResult.affectedRows <= 0) {
+                    throw new Error('Failed to Update Staff Table');
+                }
+            }
+
+            //Old Role is Service Provider and New Role is Not, therefore need to Update Calendar ID to null
+            else if (isServiceProviderOld === 1 && isServiceProviderNew === 0) {
+                //UPDATE STAFF TABLE
+                const sql3 = "UPDATE STAFF SET STAFF_FULL_NAME = ?, ROLE_CODE = ?, STAFF_CONTACT_NUMBER = ?, STAFF_BIO = ?, STAFF_CALENDAR_ID = ? WHERE STAFF_ID = ?";
+                const [updateStaffResult] = await connection.execute(sql3, [staffName, staffRole, staffContact, staffBio, null, staffId])
+
+                if (updateStaffResult.affectedRows <= 0) {
+                    throw new Error('Failed to Update Staff Table');
+                }
             }
         }
-
-
 
         //UPDATE STAFF SPECIALTY
         const sql4 = "DELETE FROM STAFFSPECIALTY WHERE STAFF_ID = ?";
