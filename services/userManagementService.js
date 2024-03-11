@@ -121,4 +121,112 @@ const fetchAllRolesObj = async () => {
     }
 }
 
-module.exports = { fetchAllRoles, createNewRole, editExistingRole, deleteExistingRole, fetchAllRolesObj, };
+const fetchAllPermissionCategories = async () => {
+    try {
+        const sql = "SELECT DISTINCT(PERMISSION_CATEGORY) AS category, PERMISSION_CATEGORY_ORDER AS sequence FROM PERMISSION WHERE PERMISSION_CATEGORY != 'Customer' ORDER BY PERMISSION_CATEGORY_ORDER;";
+
+        const [permissionCategoriesResult] = await connection.execute(sql);
+
+        if (permissionCategoriesResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Permission Categories Found',
+                data: null,
+            }
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Permission Categories',
+            data: permissionCategoriesResult,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchAllRolePermissions = async (roleCode) => {
+    try {
+        const sql = "SELECT rp.ROLE_CODE AS roleCode, GROUP_CONCAT(DISTINCT(p.PERMISSION_CATEGORY)) AS permissionCategories FROM ROLEPERMISSION rp INNER JOIN PERMISSION p ON rp.PERMISSION_CODE = p.PERMISSION_CODE WHERE ROLE_CODE = ? GROUP BY rp.ROLE_CODE";
+
+        const [rolePermissionsResult] = await connection.execute(sql, [roleCode]);
+
+        if (rolePermissionsResult.length === 0) {
+            return {
+                status: 'success',
+                message: 'No Role Permissions Record Found',
+                data: {
+                    roleCode: roleCode,
+                    permissionCategories: [],
+                }
+            }
+        }
+        const [rolePermissionsString] = rolePermissionsResult;
+        const rolePermissions = {
+            ...rolePermissionsString,
+            permissionCategories: rolePermissionsString.permissionCategories.split(','),
+        }
+
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Role Permissions',
+            data: rolePermissions,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const saveNewRoleAccess = async (rolePermissions) => {
+    try {
+        const { roleCode, permissions } = rolePermissions;
+
+        await connection.query('START TRANSACTION');
+
+        //Delete All RolePermission for that Role First
+        const sql = "DELETE FROM ROLEPERMISSION WHERE ROLE_CODE = ?";
+
+        const [deleteRolePermissionsResult] = await connection.execute(sql, [roleCode]);
+
+        const rowAffected = deleteRolePermissionsResult.affectedRows;
+
+        //Get All the PERMISSION_CODE Based on the Selected Permission Categories
+        const placeholders = permissions.map(() => '?').join(', ');
+        const sql2 = `SELECT PERMISSION_CODE AS permissionCode FROM PERMISSION WHERE PERMISSION_CATEGORY IN (${placeholders})`;
+        const [permissionCodesResult] = await connection.execute(sql2, permissions);
+
+        if (permissionCodesResult === 0) {
+            throw new Error('No Permission Codes Found');
+        }
+
+        for (const codes of permissionCodesResult) {
+            const { permissionCode } = codes;
+
+            const sql3 = "INSERT INTO ROLEPERMISSION (ROLE_CODE, PERMISSION_CODE) VALUES (?, ?)";
+            const [insertRolePermissionResult] = await connection.execute(sql3, [roleCode, permissionCode]);
+
+            const rowAffected2 = insertRolePermissionResult.affectedRows;
+
+            if (rowAffected2 <= 0) {
+                throw new Error('Failed to Insert into RolePermission Table');
+            }
+        }
+
+        await connection.query('COMMIT');
+
+        return {
+            status: 'success',
+            message: 'Successfully Saved New Role Access',
+        }
+
+    } catch (err) {
+        console.log(err)
+        await connection.query('ROLLBACK');
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllRoles, createNewRole, editExistingRole, deleteExistingRole, fetchAllRolesObj, fetchAllPermissionCategories, fetchAllRolePermissions, saveNewRoleAccess, };

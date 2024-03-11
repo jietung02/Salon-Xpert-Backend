@@ -116,6 +116,7 @@ router.post('/match-specialists', async (req, res) => {
 //Fetch the Selected Specialists Schedule
 router.post('/specialist-timeslots', async (req, res) => {
   try {
+
     const { selectedServices, selectedSpecialist, selectedDate } = req.body;
     console.log(req.body)
 

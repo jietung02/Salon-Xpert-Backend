@@ -1,4 +1,4 @@
-const { fetchAllRoles, createNewRole, editExistingRole, deleteExistingRole, fetchAllRolesObj, } = require('../services/userManagementService');
+const { fetchAllRoles, createNewRole, editExistingRole, deleteExistingRole, fetchAllRolesObj, fetchAllPermissionCategories, fetchAllRolePermissions, saveNewRoleAccess, } = require('../services/userManagementService');
 
 const fetchRoles = async () => {
     try {
@@ -45,4 +45,31 @@ const fetchRolesObj = async () => {
     }
 }
 
-module.exports = { fetchRoles, addNewRole, editRole, deleteRole, fetchRolesObj, };
+const fetchPermissionCategories = async () => {
+    try {
+        const response = await fetchAllPermissionCategories();
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchRolePermissions = async (roleCode) => {
+    try {
+        const response = await fetchAllRolePermissions(roleCode);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const saveRoleAccess = async (rolePermissions) => {
+    try {
+        const response = await saveNewRoleAccess(rolePermissions);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchRoles, addNewRole, editRole, deleteRole, fetchRolesObj, fetchPermissionCategories, fetchRolePermissions, saveRoleAccess, };
