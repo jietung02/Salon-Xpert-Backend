@@ -1,4 +1,4 @@
-const { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, } = require('../services/salonConfigurationService');
+const { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, } = require('../services/salonConfigurationService');
 
 const fetchAllServices = async () => {
     try {
@@ -89,4 +89,48 @@ const deleteStaffProfile = async (staffId) => {
     }
 }
 
-module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, };
+const fetchPriceOptions = async () => {
+    try {
+        const response = await fetchAllPriceOptions();
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const savePriceOptions = async (priceOptions) => {
+    try {
+        const response = await saveNewPriceOptions(priceOptions);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+const fetchPricingRules = async () => {
+    try {
+        const response = await fetchAllPricingRules();
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchAgeCategories = async () => {
+    try {
+        const response = await fetchAllAgeCategories();
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchMatchSpecialists = async (serviceCode) => {
+    try {
+        const response = await fetchAllMatchSpecialists(serviceCode);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, };

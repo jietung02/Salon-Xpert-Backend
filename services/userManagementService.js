@@ -198,7 +198,7 @@ const saveNewRoleAccess = async (rolePermissions) => {
         const sql2 = `SELECT PERMISSION_CODE AS permissionCode FROM PERMISSION WHERE PERMISSION_CATEGORY IN (${placeholders})`;
         const [permissionCodesResult] = await connection.execute(sql2, permissions);
 
-        if (permissionCodesResult === 0) {
+        if (permissionCodesResult.length === 0) {
             throw new Error('No Permission Codes Found');
         }
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile ,} = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists,} = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -88,25 +88,105 @@ router
 
 
 //Configure Pricing Options
-router.get('/pricing-options', (req, res) => {
-  res.send('Retrieve pricing options');
+router.get('/pricing-options', async (req, res) => {
+
+  try {
+    const response = await fetchPriceOptions();
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
 });
 
-router.post('/pricing-options/new', (req, res) => {
-  res.send('new pricing options');
+router.put('/pricing-options/save', async (req, res) => {
+
+  try {
+    const { priceOptions } = req.body;
+
+    if (!Array.isArray(priceOptions) || priceOptions.length === 0) {
+      return res.status(400).json({ status: 'error', message: 'No Price Options Provided' });
+    }
+
+    const response = await savePriceOptions(priceOptions);
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
+  }
 });
 
-router.route('/pricing-options/:pricingoptionID')
-  .put((req, res) => {
-    res.send('modify pricing options');
-  });
+// router.route('/pricing-options/:pricingoptionID')
+//   .put((req, res) => {
+//     res.send('modify pricing options');
+//   });
 
 
 
 //Configure Pricing Rules
-router.get('/pricing-rules', (req, res) => {
-  res.send('Retrieve all pricing rules');
+router.get('/pricing-rules', async (req, res) => {
+
+  try {
+    const response = await fetchPricingRules();
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
 });
+
+//Fetch All Services for Pricing Rules Creation
+router.get('/pricing-rules/services', async (req, res) => {
+
+  try {
+    const response = await fetchServices();
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+router.post('/pricing-rules/new', (req, res) => {
+  res.send('New pricing rule');
+});
+
+//Fetch All Age Categories Defined by the Salon
+router.get('/pricing-rules/age-categories', async (req, res) => {
+
+  try {
+    const response = await fetchAgeCategories();
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+//Fetch All Specialists that Match the Selected Service
+router.get('/pricing-rules/match-specialists/:serviceCode', async (req, res) => {
+
+  try {
+    const serviceCode = req.params.serviceCode;
+
+    if (serviceCode === undefined || serviceCode === null) {
+      return res.status(400).json({ status: 'error', message: 'No Service Code Provided' });
+    }
+    const response = await fetchMatchSpecialists(serviceCode);
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+
 
 router.post('/pricing-rules/new', (req, res) => {
   res.send('New pricing rule');
@@ -122,6 +202,8 @@ router
   }).delete((req, res) => {
     res.send('delete specific pricing rule');
   });
+
+
 
 //Configure Staff Profile
 router.get('/staff-profiles', async (req, res) => {

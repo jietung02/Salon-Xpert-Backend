@@ -10,7 +10,7 @@ const getAllServices = async () => {
 
         const [serviceResult] = await connection.execute(sql);
 
-        if (serviceResult === 0) {
+        if (serviceResult.length === 0) {
             return;
         }
         const services = await convertServicesFormat(serviceResult);
@@ -38,7 +38,7 @@ const getMatchSpecialists = async (selectedServices) => {
         const params = [...selectedServices, selectedServices.length];
         const [specialistsResult] = await connection.execute(sql, params);
 
-        if (specialistsResult === 0) {
+        if (specialistsResult.length === 0) {
             return;
         }
         const specialists = await convertSpecialistsFormat(specialistsResult);

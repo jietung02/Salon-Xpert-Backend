@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const { connection } = require('../config/dbConnection');
 const { userRegistration } = require('../services/authService');
 const { createNewCalendar } = require('../services/calendarService');
+const { reformatAgeCategories } = require('../utils/utils');
 
 const fetchAllSalonServices = async () => {
     try {
@@ -106,7 +107,7 @@ const fetchAllStaffProfiles = async () => {
 
         const [serviceResult] = await connection.execute(sql);
 
-        if (serviceResult === 0) {
+        if (serviceResult.length === 0) {
             return {
                 status: 'error',
                 message: 'No Profiles Found',
@@ -155,7 +156,7 @@ const fetchAllAvailableRoles = async () => {
 
         const [rolesResult] = await connection.execute(sql);
         console.log(rolesResult)
-        if (rolesResult === 0) {
+        if (rolesResult.length === 0) {
             return {
                 status: 'error',
                 message: 'No Roles Found',
@@ -176,11 +177,11 @@ const fetchAllAvailableRoles = async () => {
 
 const fetchAllAvailableServices = async () => {
     try {
-        const sql = "SELECT SERVICE_CODE AS serviceCode, SERVICE_NAME AS serviceName FROM SERVICE";
+        const sql = "SELECT SERVICE_CODE AS serviceCode, SERVICE_NAME AS serviceName FROM SERVICE ORDER BY SERVICE_NAME";
 
         const [servicesResult] = await connection.execute(sql);
 
-        if (servicesResult === 0) {
+        if (servicesResult.length === 0) {
             return {
                 status: 'error',
                 message: 'No Services Found',
@@ -338,7 +339,7 @@ const editExistingStaffProfile = async (profileDetails) => {
             //CHECK CALENDAR ID (COULD BE PREVIOUSLY DELETED ROLE IS SERVICER PROVIDER) (TO DECIDE WHETHER NEED TO CREATE A NEW CALENDAR ID)
             const calendarExitsql = "SELECT STAFF_CALENDAR_ID AS oldCalId FROM STAFF WHERE STAFF_ID = ?";
             const [calResult] = await connection.execute(calendarExitsql, [staffId])
-            const [{oldCalId}] = calResult;
+            const [{ oldCalId }] = calResult;
             if (oldCalId === null && isServiceProviderNew === 1) {
 
                 //GENERATE CALENDAR ID
@@ -505,4 +506,143 @@ const deleteExistingStaffProfile = async (staffId) => {
     }
 }
 
-module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, };
+const fetchAllPriceOptions = async () => {
+    try {
+
+        const sql1 = "SELECT DISTINCT(PRICEOPTION_CODE) AS priceOptionCode, PRICEOPTION_NAME AS priceOptionName, PRICEOPTION_ACTIVE AS priceOptionIsActive FROM PRICEOPTION";
+        const [priceOptionsResult] = await connection.execute(sql1);
+
+        if (priceOptionsResult.length === 0) {
+            throw new Error('Failed to Fetch All Price Options');
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetch All Price Options',
+            data: priceOptionsResult,
+        }
+
+    } catch (err) {
+
+        throw new Error(err.message);
+    }
+}
+
+const saveNewPriceOptions = async (priceOptions) => {
+    try {
+
+        const placeholders = priceOptions.map(() => '?').join(', ');
+        const sql1 = `UPDATE PRICEOPTION SET PRICEOPTION_ACTIVE = CASE WHEN PRICEOPTION_CODE IN (${placeholders}) THEN 1 ELSE 0 END`;
+        const [updatePriceOptionResult] = await connection.execute(sql1, priceOptions);
+
+        const rowAffected = updatePriceOptionResult.affectedRows;
+
+        if (rowAffected <= 0) {
+            return {
+                status: 'error',
+                message: 'Failed to Update Price Options from Price Option Table',
+            }
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Updated Price Options in Price Option Table',
+
+        }
+
+    } catch (err) {
+
+        throw new Error(err.message);
+    }
+}
+
+const fetchAllPricingRules = async () => {
+    try {
+        const sql = "SELECT pr.PRICERULE_ID AS pricingRuleId, s.SERVICE_NAME AS serviceName, po.PRICEOPTION_NAME AS priceOptionName, CASE WHEN pr.PRICEOPTION_CODE = 'SPECIALIST' THEN st.STAFF_FULL_NAME ELSE pr.PRICERULE_OPTION_VALUE END AS priceRuleValueName, pr.PRICERULE_PRICE_ADJUSTMENT AS priceAdjustment, pr.SERVICE_CODE AS serviceCode, pr.PRICEOPTION_CODE AS priceOptionCode, pr.PRICERULE_OPTION_VALUE AS priceRuleValueCode FROM PRICERULE pr INNER JOIN SERVICE s ON pr.SERVICE_CODE = s.SERVICE_CODE INNER JOIN PRICEOPTION po ON pr.PRICEOPTION_CODE = po.PRICEOPTION_CODE LEFT JOIN STAFF st ON pr.PRICEOPTION_CODE = 'SPECIALIST' AND pr.PRICERULE_OPTION_VALUE = st.STAFF_ID ORDER BY s.SERVICE_NAME";
+
+
+        const [pricingRulesResult] = await connection.execute(sql);
+
+        if (pricingRulesResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Pricing Rules Found',
+                data: null,
+                additionalData: null,
+            }
+        }
+
+        const pricingRulesData = pricingRulesResult.map((value) => {
+            return [value.pricingRuleId, value.serviceName, value.priceOptionName, value.priceRuleValueName, value.priceAdjustment];
+        });
+
+        const additionalData = pricingRulesResult.map((value) => {
+            return {
+                pricingRuleId: value.priceRuleId,
+                serviceCode: value.serviceCode,
+                priceOptionCode: value.priceOptionCode,
+                priceRuleOptionValue: value.priceRuleValueCode,
+                priceAdjustment: value.priceAdjustment,
+            }
+        });
+
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Pricing Rules',
+            data: {
+                headers: ['Pricing Rule ID', 'Service Name', 'Price Option Name', 'Criteria', 'Price Adjustment'],
+                pricingRulesData: pricingRulesData,
+                additionalData: additionalData,
+
+            }
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const fetchAllAgeCategories = async () => {
+    try {
+        const ageRange = process.env.AGERANGE;
+        const ageCategories = reformatAgeCategories(ageRange);
+
+        return {
+            status: 'success',
+            message: 'Successfully Retrieved Age Categories',
+            data: ageCategories,
+
+        }
+    } catch (err) {
+        throw new Error('Fail the Retrieved the Age Categories')
+    }
+}
+
+const fetchAllMatchSpecialists = async (serviceCode) => {
+    
+    try {
+        const sql = "SELECT sp.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName FROM STAFFSPECIALTY sp INNER JOIN STAFF s ON sp.STAFF_ID = s.STAFF_ID WHERE sp.SERVICE_CODE = ?";
+
+        const [matchSpecialistsResult] = await connection.execute(sql, [serviceCode]);
+
+        if (matchSpecialistsResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Match Specialists Found',
+                data: null,
+            }
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched All Pricing Rules',
+            data: matchSpecialistsResult,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, };
