@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists,} = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, createPricingRule, editPricingRule, } = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -151,9 +151,6 @@ router.get('/pricing-rules/services', async (req, res) => {
   }
 });
 
-router.post('/pricing-rules/new', (req, res) => {
-  res.send('New pricing rule');
-});
 
 //Fetch All Age Categories Defined by the Salon
 router.get('/pricing-rules/age-categories', async (req, res) => {
@@ -188,8 +185,28 @@ router.get('/pricing-rules/match-specialists/:serviceCode', async (req, res) => 
 
 
 
-router.post('/pricing-rules/new', (req, res) => {
-  res.send('New pricing rule');
+router.post('/pricing-rules/new', async (req, res) => {
+
+  try {
+    const pricingRuleDetails = req.body;
+
+    if (pricingRuleDetails === undefined || pricingRuleDetails === null) {
+      return res.status(400).json({ status: 'error', message: 'Missing Required Pricing Rule Details' });
+    }
+
+    const { serviceCode, priceOptionType, priceOptionValue, priceAdjustment } = pricingRuleDetails;
+
+    if (serviceCode === null || priceOptionType === null || priceOptionValue === null || priceAdjustment === null) {
+      return res.status(400).json({ status: 'error', message: 'Missing Required Pricing Rule Details' });
+    }
+
+    const response = await createPricingRule(pricingRuleDetails);
+
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
+  }
 });
 
 router
@@ -197,8 +214,29 @@ router
   .get((req, res) => {
     res.send('get specific pricing rules');
   })
-  .put((req, res) => {
-    res.send('Modify specific pricing rule');
+  .put(async (req, res) => {
+
+    try {
+      const pricingRuleDetails = req.body;
+
+      if (pricingRuleDetails === undefined || pricingRuleDetails === null) {
+        return res.status(400).json({ status: 'error', message: 'Missing Required Pricing Rule Details' });
+      }
+
+      const { pricingRuleId, serviceCode, priceOptionType, priceOptionValue, priceAdjustment } = pricingRuleDetails;
+
+      if (pricingRuleId === null || serviceCode === null || priceOptionType === null || priceOptionValue === null || priceAdjustment === null) {
+        return res.status(400).json({ status: 'error', message: 'Missing Required Pricing Rule Details' });
+      }
+
+      const response = await editPricingRule(pricingRuleDetails);
+
+      return res.status(200).json(response);
+
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message })
+    }
+
   }).delete((req, res) => {
     res.send('delete specific pricing rule');
   });

@@ -1,4 +1,4 @@
-const { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, } = require('../services/salonConfigurationService');
+const { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, createNewPricingRule, editExistingPricingRule, } = require('../services/salonConfigurationService');
 
 const fetchAllServices = async () => {
     try {
@@ -133,4 +133,22 @@ const fetchMatchSpecialists = async (serviceCode) => {
     }
 }
 
-module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, };
+const createPricingRule = async (pricingRuleDetails) => {
+    try {
+        const response = await createNewPricingRule(pricingRuleDetails);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const editPricingRule = async (pricingRuleDetails) => {
+    try {
+        const response = await editExistingPricingRule(pricingRuleDetails);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, createPricingRule, editPricingRule, };

@@ -530,7 +530,6 @@ const fetchAllPriceOptions = async () => {
 
 const saveNewPriceOptions = async (priceOptions) => {
     try {
-
         const placeholders = priceOptions.map(() => '?').join(', ');
         const sql1 = `UPDATE PRICEOPTION SET PRICEOPTION_ACTIVE = CASE WHEN PRICEOPTION_CODE IN (${placeholders}) THEN 1 ELSE 0 END`;
         const [updatePriceOptionResult] = await connection.execute(sql1, priceOptions);
@@ -577,8 +576,9 @@ const fetchAllPricingRules = async () => {
         });
 
         const additionalData = pricingRulesResult.map((value) => {
+
             return {
-                pricingRuleId: value.priceRuleId,
+                pricingRuleId: value.pricingRuleId,
                 serviceCode: value.serviceCode,
                 priceOptionCode: value.priceOptionCode,
                 priceRuleOptionValue: value.priceRuleValueCode,
@@ -620,7 +620,7 @@ const fetchAllAgeCategories = async () => {
 }
 
 const fetchAllMatchSpecialists = async (serviceCode) => {
-    
+
     try {
         const sql = "SELECT sp.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName FROM STAFFSPECIALTY sp INNER JOIN STAFF s ON sp.STAFF_ID = s.STAFF_ID WHERE sp.SERVICE_CODE = ?";
 
@@ -645,4 +645,52 @@ const fetchAllMatchSpecialists = async (serviceCode) => {
     }
 }
 
-module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, };
+const createNewPricingRule = async (pricingRuleDetails) => {
+    try {
+
+        const { serviceCode, priceOptionType, priceOptionValue, priceAdjustment } = pricingRuleDetails;
+
+        const sql = "INSERT INTO PRICERULE (SERVICE_CODE, PRICEOPTION_CODE, PRICERULE_OPTION_VALUE, PRICERULE_PRICE_ADJUSTMENT) VALUES (?, ?, ?, ?)";
+
+        const [newPricingRuleResult] = await connection.execute(sql, [serviceCode, priceOptionType, priceOptionValue, priceAdjustment]);
+
+        if (newPricingRuleResult.affectedRows <= 0) {
+            throw new Error('Failed to Insert into PriceRule Table');
+        }
+
+
+        return {
+            status: 'success',
+            message: 'Successfully Created New Pricing Rule',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const editExistingPricingRule = async (pricingRuleDetails) => {
+    try {
+
+        const { pricingRuleId, priceAdjustment } = pricingRuleDetails;
+
+        const sql = "UPDATE PRICERULE SET PRICERULE_PRICE_ADJUSTMENT = ? WHERE PRICERULE_ID = ?";
+
+        const [editPricingRuleResult] = await connection.execute(sql, [priceAdjustment, pricingRuleId]);
+
+        if (editPricingRuleResult.affectedRows <= 0) {
+            throw new Error('Failed to Update Pricing Rule');
+        }
+
+
+        return {
+            status: 'success',
+            message: 'Successfully Updated Pricing Rule',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, createNewPricingRule, editExistingPricingRule, };
