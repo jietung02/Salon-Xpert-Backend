@@ -1,5 +1,5 @@
 const express = require('express');
-const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, createPricingRule, editPricingRule, } = require('../controllers/salonConfigurationController');
+const { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, createPricingRule, editPricingRule, deletePricingRule, } = require('../controllers/salonConfigurationController');
 const router = express.Router();
 
 //Configure Service
@@ -210,7 +210,7 @@ router.post('/pricing-rules/new', async (req, res) => {
 });
 
 router
-  .route('/pricing-rules/:pricingruleId')
+  .route('/pricing-rules/:pricingRuleId')
   .get((req, res) => {
     res.send('get specific pricing rules');
   })
@@ -237,8 +237,22 @@ router
       res.status(500).json({ status: 'error', message: error.message })
     }
 
-  }).delete((req, res) => {
-    res.send('delete specific pricing rule');
+  }).delete(async (req, res) => {
+
+    try {
+      const pricingRuleId = req.params.pricingRuleId;
+
+      if (pricingRuleId === undefined || pricingRuleId === null) {
+        return res.status(400).json({ status: 'error', message: 'No Pricing Rule ID Provided' });
+      }
+
+      const response = await deletePricingRule(pricingRuleId);
+
+      return res.status(200).json(response);
+
+    } catch (error) {
+      res.status(500).json({ status: 'error', message: error.message })
+    }
   });
 
 

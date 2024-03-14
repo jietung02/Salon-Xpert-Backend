@@ -493,6 +493,12 @@ const deleteExistingStaffProfile = async (staffId) => {
             throw new Error('Failed to Delete User from User Table');
         }
 
+        //DELETE FROM PRICERULE TABLE
+        const sql4 = "DELETE FROM PRICERULE WHERE PRICEOPTION_CODE = 'SPECIALIST' AND PRICERULE_OPTION_VALUE = ?";
+
+        await connection.execute(sql4, [staffId]);
+
+
         await connection.query('COMMIT');
 
         return {
@@ -671,7 +677,7 @@ const createNewPricingRule = async (pricingRuleDetails) => {
 
 const editExistingPricingRule = async (pricingRuleDetails) => {
     try {
-
+        
         const { pricingRuleId, priceAdjustment } = pricingRuleDetails;
 
         const sql = "UPDATE PRICERULE SET PRICERULE_PRICE_ADJUSTMENT = ? WHERE PRICERULE_ID = ?";
@@ -693,4 +699,25 @@ const editExistingPricingRule = async (pricingRuleDetails) => {
     }
 }
 
-module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, createNewPricingRule, editExistingPricingRule, };
+const deleteExistingPricingRule = async (pricingRuleId) => {
+    try {
+
+        const sql = "DELETE FROM PRICERULE WHERE PRICERULE_ID = ?";
+
+        const [deletePricingRuleResult] = await connection.execute(sql, [pricingRuleId]);
+
+        if (deletePricingRuleResult.affectedRows <= 0) {
+            throw new Error('Failed to Delete Pricing Rule from PriceRule Table');
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Delete Pricing Rule',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, createNewPricingRule, editExistingPricingRule, deleteExistingPricingRule, };

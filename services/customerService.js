@@ -1,6 +1,6 @@
 const { connection } = require('../config/dbConnection');
 const { createNewEventinStaffCalendar, getEvents, getSpecialistEvents, checkAvailability, } = require('./calendarService');
-const {convertServicesFormat } = require('../utils/responseFormatter');
+const { convertServicesFormat } = require('../utils/responseFormatter');
 const crypto = require('crypto');
 const moment = require('moment');
 
@@ -63,146 +63,212 @@ const convertSpecialistsFormat = async (specialists) => {
 
 }
 
+const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
+    try {
+        const { name, email, gender, age, contact, selectedServices, selectedSpecialist, selectedDate, selectedTime, from, username } = appointDetails;
+
+        //GET PRICE OPTIONS WHERE IS SELECTED = 1
+        const sql = "SELECT PRICEOPTION_CODE AS priceOptionCode FROM PRICEOPTION WHERE PRICEOPTION_ACTIVE = 1";
+        const [priceOptionsResult] = await connection.execute(sql);
+
+        if (priceOptionsResult.length === 0) {
+            return null;
+        }
+
+
+        const priceOptionCodes = priceOptionsResult.map(value => value.priceOptionCode);
+
+        const placeholders = priceOptionCodes.map(() => '?').join(', ');
+        const placeholders2 = selectedServices.map(() => '?').join(', ');
+        const sql2 = `SELECT SERVICE_CODE AS serviceCode, PRICEOPTION_CODE AS priceOptionCode, PRICERULE_OPTION_VALUE AS priceOptionValue, PRICERULE_PRICE_ADJUSTMENT AS priceAdjustment FROM PRICERULE WHERE PRICEOPTION_CODE IN (${placeholders}) && SERVICE_CODE IN (${placeholders2})`;
+        console.log(sql2)
+        const params = [...priceOptionCodes, ...selectedServices];
+        console.log(params)
+        const [pricingRulesResult] = await connection.execute(sql2, params);
+        console.log(pricingRulesResult);
+
+        console.log(selectedSpecialist)
+        const totalEstimatedPrice = pricingRulesResult.reduce((accum, curr) => {
+            console.log(accum)
+            const { serviceCode, priceOptionCode, priceOptionValue, priceAdjustment } = curr;
+
+            if (priceOptionCode === 'AGE') {
+                const [fromAge, toAge] = priceOptionValue.split('-');
+
+                if (parseInt(fromAge) <= age && age <= parseInt(toAge)) {
+                    return parseFloat(accum) + parseFloat(priceAdjustment);
+                }
+            }
+            else if (priceOptionCode === 'GENDER') {
+                if (priceOptionValue === gender) {
+                    return parseFloat(accum) + parseFloat(priceAdjustment);
+                }
+            }
+
+            else if (priceOptionCode === 'SPECIALIST') {
+                if (priceOptionValue === selectedSpecialist) {
+                    return parseFloat(accum) + parseFloat(priceAdjustment);
+                }
+            }
+            return accum;
+        }, totalBasedPrice);
+        console.log(totalEstimatedPrice)
+
+        return totalEstimatedPrice.toFixed(2);
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+
+
+}
+
 const createNewAppointment = async (appointDetails) => {
     try {
         const { name, email, gender, age, contact, selectedServices, bookingmethod, selectedSpecialist, selectedDate, selectedTime, from, username } = appointDetails;
 
-        //GET CUSTOMER ID
-        let customerId = null;
-        if (username !== null) {
-            const sql0 = "SELECT CUSTOMER_ID as custId FROM CUSTOMER INNER JOIN USER ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
-            const [userIdResult] = await connection.execute(sql0, [username]);
+        // //GET CUSTOMER ID
+        // let customerId = null;
+        // if (username !== null) {
+        //     const sql0 = "SELECT CUSTOMER_ID as custId FROM CUSTOMER INNER JOIN USER ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
+        //     const [userIdResult] = await connection.execute(sql0, [username]);
 
-            const [{ custId }] = userIdResult;
-            if (custId === null) {
-                throw new Error('Failed to Fetch Customer ID');
-            }
-            customerId = custId;
-        }
+        //     const [{ custId }] = userIdResult;
+        //     if (custId === null) {
+        //         throw new Error('Failed to Fetch Customer ID');
+        //     }
+        //     customerId = custId;
+        // }
 
 
-        //GET STAFF NAME AND CALENDAR ID 
-        const sql = "SELECT STAFF_FULL_NAME AS staffName, STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
+        // //GET STAFF NAME AND CALENDAR ID 
+        // const sql = "SELECT STAFF_FULL_NAME AS staffName, STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
 
-        const [staffNameCalendarIdResult] = await connection.execute(sql, [selectedSpecialist]);
-        if (staffNameCalendarIdResult.length === 0) {
-            throw new Error('No Specialist Name and Calendar ID Found');
-        }
-        const [{ staffName, calendarId }] = staffNameCalendarIdResult;
+        // const [staffNameCalendarIdResult] = await connection.execute(sql, [selectedSpecialist]);
+        // if (staffNameCalendarIdResult.length === 0) {
+        //     throw new Error('No Specialist Name and Calendar ID Found');
+        // }
+        // const [{ staffName, calendarId }] = staffNameCalendarIdResult;
 
-        //GET SUM SERVICE DURATION AND SERVICE BASED PRICE
+        // //GET SUM SERVICE DURATION AND SERVICE BASED PRICE
         const placeholders = selectedServices.map(() => '?').join(', ');
         const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration, SUM(SERVICE_BASED_PRICE) AS totalPrice FROM SERVICE WHERE SERVICE_CODE IN (${placeholders})`;
 
         const [durationPriceResult] = await connection.execute(sql2, selectedServices);
-        const [{ totalDuration, totalPrice }] = durationPriceResult;
 
-
-        //GET SERVICES NAME
-        const serviceplaceholders = selectedServices.map(() => '?').join(', ');
-        const sql3 = `SELECT SERVICE_NAME AS serviceName FROM SERVICE WHERE SERVICE_CODE IN (${serviceplaceholders})`;
-
-        const [servicesWithName] = await connection.execute(sql3, selectedServices);
-
-        if (servicesWithName.length === 0) {
-            throw new Error('Service Names Not Found');
+        if (durationPriceResult.length === 0) {
+            throw new Error('Failed to Retrieve Total Service Duration and Price')
         }
-        const servicesNameString = servicesWithName.map(value => value.serviceName).join(', ');
+
+        const [{ totalDuration, totalPrice }] = durationPriceResult;
+        // //GET SERVICES NAME
+        // const serviceplaceholders = selectedServices.map(() => '?').join(', ');
+        // const sql3 = `SELECT SERVICE_NAME AS serviceName FROM SERVICE WHERE SERVICE_CODE IN (${serviceplaceholders})`;
+
+        // const [servicesWithName] = await connection.execute(sql3, selectedServices);
+
+        // if (servicesWithName.length === 0) {
+        //     throw new Error('Service Names Not Found');
+        // }
+        // const servicesNameString = servicesWithName.map(value => value.serviceName).join(', ');
+
+
         //GET ESTIMATED PRICE (hardcode now will change here in the future)
-        const estimatedPrice = '30.50';
+        const estimatedPrice = await getEstimatedPrice(appointDetails, totalPrice);
 
         //GET DEPOSIT PRICE
-        const depositAmount = Math.floor(parseFloat(estimatedPrice) * 0.1).toFixed(2);
+        const depositAmount = Math.floor(parseFloat(estimatedPrice !== null ? estimatedPrice : totalPrice) * 0.1).toFixed(2);
 
-        //START HERE RECALL THE CHECK OVERLAP FUNCTION TO SEE IF THE SELECTED TIMESLOT STILL AVAILABLE, ELSE THROW NEW ERROR
-        const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist, selectedDate });
-        // console.log(availableTimeSlots);
+        console.log(depositAmount)
+        // //START HERE RECALL THE CHECK OVERLAP FUNCTION TO SEE IF THE SELECTED TIMESLOT STILL AVAILABLE, ELSE THROW NEW ERROR
+        // const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist, selectedDate });
+        // // console.log(availableTimeSlots);
 
-        const appointmentDateTime = new Date(selectedTime);
-        const hour = appointmentDateTime.getHours();
-        const minute = appointmentDateTime.getMinutes();
+        // const appointmentDateTime = new Date(selectedTime);
+        // const hour = appointmentDateTime.getHours();
+        // const minute = appointmentDateTime.getMinutes();
 
-        const available = availableTimeSlots.filter((value) => {
-            return value.hour === hour && value.minutes.includes(minute);
-        });
+        // const available = availableTimeSlots.filter((value) => {
+        //     return value.hour === hour && value.minutes.includes(minute);
+        // });
 
-        if (available.length === 0) {
-            return {
-                status: 'error',
-                message: 'Selected Timeslot is Not Available',
-                data: null,
-            }
-        }
+        // if (available.length === 0) {
+        //     return {
+        //         status: 'error',
+        //         message: 'Selected Timeslot is Not Available',
+        //         data: null,
+        //     }
+        // }
 
-        console.log(available)
+        // console.log(available)
 
-        //CALCULATE APPOINTMENT END TIME
-        const appointmentEndDateTime = new Date(appointmentDateTime.getTime() + parseInt(totalDuration) * 60000);
-        const currentDateTime = new Date();
-        //GENERATE RANDOM APPOINTMENT ID
-        const appointmentId = crypto.randomBytes(16).toString('hex');
+        // //CALCULATE APPOINTMENT END TIME
+        // const appointmentEndDateTime = new Date(appointmentDateTime.getTime() + parseInt(totalDuration) * 60000);
+        // const currentDateTime = new Date();
+        // //GENERATE RANDOM APPOINTMENT ID
+        // const appointmentId = crypto.randomBytes(16).toString('hex');
 
-        //UPDATE TO APPOINTMENT DATABASE (RMB TO HARD CODE THE ESTIMATED PRICE FIRST SINCE IT IS IMPLEMENTED YET)
-        //STORE THE APPOINTMENT ID TO APPOINTMENT TABLE (SIMPLYING APPOINTMENT CANCELATION PROCESS)
-        let sql4;
-        let value;
+        // //UPDATE TO APPOINTMENT DATABASE (RMB TO HARD CODE THE ESTIMATED PRICE FIRST SINCE IT IS IMPLEMENTED YET)
+        // //STORE THE APPOINTMENT ID TO APPOINTMENT TABLE (SIMPLYING APPOINTMENT CANCELATION PROCESS)
+        // let sql4;
+        // let value;
 
-        //BEGIN TRANSACTION
-        await connection.query('START TRANSACTION');
+        // //BEGIN TRANSACTION
+        // await connection.query('START TRANSACTION');
 
-        if (from === 'customer') {
-            sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, CUSTOMER_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-            value = [appointmentId, customerId, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
-        }
-        else if (from === 'guest') {
-            sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, APPOINTMENT_CUSTOMER_FULL_NAME, APPOINTMENT_CUSTOMER_EMAIL_ADDRESS, APPOINTMENT_CUSTOMER_GENDER, APPOINTMENT_CUSTOMER_AGE, APPOINTMENT_CUSTOMER_CONTACT_NUMBER, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            value = [appointmentId, appointDetails.name, appointDetails.email, appointDetails.gender, appointDetails.age, appointDetails.contact, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
-        }
+        // if (from === 'customer') {
+        //     sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, CUSTOMER_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        //     value = [appointmentId, customerId, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
+        // }
+        // else if (from === 'guest') {
+        //     sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, APPOINTMENT_CUSTOMER_FULL_NAME, APPOINTMENT_CUSTOMER_EMAIL_ADDRESS, APPOINTMENT_CUSTOMER_GENDER, APPOINTMENT_CUSTOMER_AGE, APPOINTMENT_CUSTOMER_CONTACT_NUMBER, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        //     value = [appointmentId, appointDetails.name, appointDetails.email, appointDetails.gender, appointDetails.age, appointDetails.contact, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
+        // }
 
-        else {
-            throw new Error('No specified Booking from which user');
-        }
+        // else {
+        //     throw new Error('No specified Booking from which user');
+        // }
 
-        const [result] = await connection.execute(sql4, value);
-        const rowAffected = result.affectedRows;
+        // const [result] = await connection.execute(sql4, value);
+        // const rowAffected = result.affectedRows;
 
-        if (rowAffected <= 0) {
-            throw new Error('Failed to Insert to Appointment Table')
-        }
+        // if (rowAffected <= 0) {
+        //     throw new Error('Failed to Insert to Appointment Table')
+        // }
 
-        //UPDATE TO APPOINTMENTSERVICE
-        for (const serviceCode of appointDetails.selectedServices) {
-            const sql5 = "INSERT INTO APPOINTMENTSERVICE (APPOINTMENT_ID, SERVICE_CODE) VALUES (?, ?)";
+        // //UPDATE TO APPOINTMENTSERVICE
+        // for (const serviceCode of appointDetails.selectedServices) {
+        //     const sql5 = "INSERT INTO APPOINTMENTSERVICE (APPOINTMENT_ID, SERVICE_CODE) VALUES (?, ?)";
 
-            const [appointmentServiceResult] = await connection.execute(sql5, [appointmentId, serviceCode]);
-            const rowAffected2 = appointmentServiceResult.affectedRows;
+        //     const [appointmentServiceResult] = await connection.execute(sql5, [appointmentId, serviceCode]);
+        //     const rowAffected2 = appointmentServiceResult.affectedRows;
 
-            if (rowAffected2 <= 0) {
-                throw new Error('Failed to Insert into Appointment Service Table');
-            }
-        }
+        //     if (rowAffected2 <= 0) {
+        //         throw new Error('Failed to Insert into Appointment Service Table');
+        //     }
+        // }
 
-        await connection.query('COMMIT');
+        // await connection.query('COMMIT');
 
-        return {
-            status: 'success',
-            message: 'Appointment Added, Pending Deposit',
-            data: {
-                appointmentId: appointmentId,
-                name: appointDetails.name,
-                email: appointDetails.email,
-                servicesName: servicesNameString,
-                specialist: staffName,
-                startDateTime: moment(appointmentDateTime).format('YYYY-MM-DD HH:mm'),
-                endDateTime: moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm'),
-                estimatedPrice: estimatedPrice,
-                depositAmount: depositAmount,
-                from: from,
-            },
-        };
+        // return {
+        //     status: 'success',
+        //     message: 'Appointment Added, Pending Deposit',
+        //     data: {
+        //         appointmentId: appointmentId,
+        //         name: appointDetails.name,
+        //         email: appointDetails.email,
+        //         servicesName: servicesNameString,
+        //         specialist: staffName,
+        //         startDateTime: moment(appointmentDateTime).format('YYYY-MM-DD HH:mm'),
+        //         endDateTime: moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm'),
+        //         estimatedPrice: estimatedPrice !== null ? estimatedPrice : totalPrice,
+        //         depositAmount: depositAmount,
+        //         from: from,
+        //     },
+        // };
 
     } catch (err) {
-        await connection.query('ROLLBACK');
+        // await connection.query('ROLLBACK');
         throw new Error(err.message);
     }
 }

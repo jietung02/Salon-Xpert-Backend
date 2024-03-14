@@ -1,4 +1,4 @@
-const { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, createNewPricingRule, editExistingPricingRule, } = require('../services/salonConfigurationService');
+const { fetchAllSalonServices, createNewService, editExistingService, deleteExistingService, fetchAllStaffProfiles, fetchAllAvailableRoles, fetchAllAvailableServices, createNewStaffProfile, editExistingStaffProfile, deleteExistingStaffProfile, fetchAllPriceOptions, saveNewPriceOptions, fetchAllPricingRules, fetchAllAgeCategories, fetchAllMatchSpecialists, createNewPricingRule, editExistingPricingRule, deleteExistingPricingRule, } = require('../services/salonConfigurationService');
 
 const fetchAllServices = async () => {
     try {
@@ -151,4 +151,13 @@ const editPricingRule = async (pricingRuleDetails) => {
     }
 }
 
-module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, createPricingRule, editPricingRule, };
+const deletePricingRule = async (pricingRuleId) => {
+    try {
+        const response = await deleteExistingPricingRule(pricingRuleId);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchAllServices, addNewService, editService, deleteService, fetchAllProfiles, fetchAllRoles, fetchServices, createStaffProfile, editStaffProfile, deleteStaffProfile, fetchPriceOptions, savePriceOptions, fetchPricingRules, fetchAgeCategories, fetchMatchSpecialists, createPricingRule, editPricingRule, deletePricingRule, };
