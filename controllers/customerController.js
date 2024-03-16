@@ -1,6 +1,6 @@
 const { calendar } = require('googleapis/build/src/apis/calendar');
 const { userRegistration, } = require('../services/authService');
-const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, } = require('../services/customerService');
+const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, } = require('../services/customerService');
 
 const registerUser = async (userData) => {
 
@@ -110,5 +110,22 @@ const payDeposit = async (summaryDetails) => {
     }
 }
 
+const fetchAppointmentHistoryFeedback = async (customerId) => {
+    try {
+        const response = await fetchAppointmentHistorySSFeedback(customerId);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
 
-module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, };
+const submitServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) => {
+    try {
+        const response = await submitNewServiceSpecificFeedback(serviceSpecificFeedbackDetails);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, };

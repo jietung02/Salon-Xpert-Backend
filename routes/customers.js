@@ -2,8 +2,8 @@
 const express = require('express');
 const router = express.Router();
 
-const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, } = require('../controllers/customerController');
-const { getCalendar, createNewCalendar, checkTimeAvailability } = require('../services/calendarService');
+const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback,submitServiceSpecificFeedback, } = require('../controllers/customerController');
+const { getCalendar, createNewCalendar, checkTimeAvailability, } = require('../services/calendarService');
 
 //This register, appointment new, and general feedback, no need middleware
 
@@ -237,12 +237,51 @@ router.get('/appointment/history/:customerId', (req, res) => {
 });
 
 //Leave Feedback
-router.post('/feedback/service-specific-feedback', (req, res) => {
-  res.send('New service specific feedback');
+router.post('/feedback/service-specific-feedback/submit', async (req, res) => {
+
+  try {
+
+    const serviceSpecificFeedbackDetails = req.body;
+
+    if (serviceSpecificFeedbackDetails === undefined || serviceSpecificFeedbackDetails === null) {
+      return res.status(400).json({ status: 'error', message: 'Missing Service Specific Feedback Details' });
+    }
+
+    const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments, selectedFeedbackType } = serviceSpecificFeedbackDetails;
+
+    if (appointmentId === null || overallServiceRating === null || cleaninessRating === null || serviceSatisfactionRating === null || communicationRating === null || feedbackCategory === null || feedbackComments === null || selectedFeedbackType === null) {
+      return res.status(400).json({ status: 'error', message: 'Missing Service Specific Feedback Details' });
+    }
+
+    const response = await submitServiceSpecificFeedback(serviceSpecificFeedbackDetails);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message})
+  }
 });
 
 router.post('/feedback/general', (req, res) => {
   res.send('New general feedback');
+});
+
+router.get('/feedback/service-specific-feedback/:customerId', async (req, res) => {
+
+  try {
+    const customerId = req.params.customerId;
+
+    const response = await fetchAppointmentHistoryFeedback(customerId);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
 });
 
 router

@@ -127,30 +127,17 @@ const createNewAppointment = async (appointDetails) => {
     try {
         const { name, email, gender, age, contact, selectedServices, bookingmethod, selectedSpecialist, selectedDate, selectedTime, from, username } = appointDetails;
 
-        // //GET CUSTOMER ID
-        // let customerId = null;
-        // if (username !== null) {
-        //     const sql0 = "SELECT CUSTOMER_ID as custId FROM CUSTOMER INNER JOIN USER ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
-        //     const [userIdResult] = await connection.execute(sql0, [username]);
 
-        //     const [{ custId }] = userIdResult;
-        //     if (custId === null) {
-        //         throw new Error('Failed to Fetch Customer ID');
-        //     }
-        //     customerId = custId;
-        // }
+        //GET STAFF NAME AND CALENDAR ID 
+        const sql = "SELECT STAFF_FULL_NAME AS staffName, STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
 
+        const [staffNameCalendarIdResult] = await connection.execute(sql, [selectedSpecialist]);
+        if (staffNameCalendarIdResult.length === 0) {
+            throw new Error('No Specialist Name and Calendar ID Found');
+        }
+        const [{ staffName, calendarId }] = staffNameCalendarIdResult;
 
-        // //GET STAFF NAME AND CALENDAR ID 
-        // const sql = "SELECT STAFF_FULL_NAME AS staffName, STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
-
-        // const [staffNameCalendarIdResult] = await connection.execute(sql, [selectedSpecialist]);
-        // if (staffNameCalendarIdResult.length === 0) {
-        //     throw new Error('No Specialist Name and Calendar ID Found');
-        // }
-        // const [{ staffName, calendarId }] = staffNameCalendarIdResult;
-
-        // //GET SUM SERVICE DURATION AND SERVICE BASED PRICE
+        //GET SUM SERVICE DURATION AND SERVICE BASED PRICE
         const placeholders = selectedServices.map(() => '?').join(', ');
         const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration, SUM(SERVICE_BASED_PRICE) AS totalPrice FROM SERVICE WHERE SERVICE_CODE IN (${placeholders})`;
 
@@ -161,16 +148,16 @@ const createNewAppointment = async (appointDetails) => {
         }
 
         const [{ totalDuration, totalPrice }] = durationPriceResult;
-        // //GET SERVICES NAME
-        // const serviceplaceholders = selectedServices.map(() => '?').join(', ');
-        // const sql3 = `SELECT SERVICE_NAME AS serviceName FROM SERVICE WHERE SERVICE_CODE IN (${serviceplaceholders})`;
+        //GET SERVICES NAME
+        const serviceplaceholders = selectedServices.map(() => '?').join(', ');
+        const sql3 = `SELECT SERVICE_NAME AS serviceName FROM SERVICE WHERE SERVICE_CODE IN (${serviceplaceholders})`;
 
-        // const [servicesWithName] = await connection.execute(sql3, selectedServices);
+        const [servicesWithName] = await connection.execute(sql3, selectedServices);
 
-        // if (servicesWithName.length === 0) {
-        //     throw new Error('Service Names Not Found');
-        // }
-        // const servicesNameString = servicesWithName.map(value => value.serviceName).join(', ');
+        if (servicesWithName.length === 0) {
+            throw new Error('Service Names Not Found');
+        }
+        const servicesNameString = servicesWithName.map(value => value.serviceName).join(', ');
 
 
         //GET ESTIMATED PRICE (hardcode now will change here in the future)
@@ -179,96 +166,122 @@ const createNewAppointment = async (appointDetails) => {
         //GET DEPOSIT PRICE
         const depositAmount = Math.floor(parseFloat(estimatedPrice !== null ? estimatedPrice : totalPrice) * 0.1).toFixed(2);
 
-        console.log(depositAmount)
-        // //START HERE RECALL THE CHECK OVERLAP FUNCTION TO SEE IF THE SELECTED TIMESLOT STILL AVAILABLE, ELSE THROW NEW ERROR
-        // const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist, selectedDate });
-        // // console.log(availableTimeSlots);
 
-        // const appointmentDateTime = new Date(selectedTime);
-        // const hour = appointmentDateTime.getHours();
-        // const minute = appointmentDateTime.getMinutes();
+        //START HERE RECALL THE CHECK OVERLAP FUNCTION TO SEE IF THE SELECTED TIMESLOT STILL AVAILABLE, ELSE THROW NEW ERROR
+        const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist, selectedDate });
+        // console.log(availableTimeSlots);
 
-        // const available = availableTimeSlots.filter((value) => {
-        //     return value.hour === hour && value.minutes.includes(minute);
-        // });
+        const appointmentDateTime = new Date(selectedTime);
+        const hour = appointmentDateTime.getHours();
+        const minute = appointmentDateTime.getMinutes();
 
-        // if (available.length === 0) {
-        //     return {
-        //         status: 'error',
-        //         message: 'Selected Timeslot is Not Available',
-        //         data: null,
-        //     }
-        // }
+        const available = availableTimeSlots.filter((value) => {
+            return value.hour === hour && value.minutes.includes(minute);
+        });
 
-        // console.log(available)
+        if (available.length === 0) {
+            return {
+                status: 'error',
+                message: 'Selected Timeslot is Not Available',
+                data: null,
+            }
+        }
 
-        // //CALCULATE APPOINTMENT END TIME
-        // const appointmentEndDateTime = new Date(appointmentDateTime.getTime() + parseInt(totalDuration) * 60000);
-        // const currentDateTime = new Date();
-        // //GENERATE RANDOM APPOINTMENT ID
-        // const appointmentId = crypto.randomBytes(16).toString('hex');
+        console.log(available)
 
-        // //UPDATE TO APPOINTMENT DATABASE (RMB TO HARD CODE THE ESTIMATED PRICE FIRST SINCE IT IS IMPLEMENTED YET)
-        // //STORE THE APPOINTMENT ID TO APPOINTMENT TABLE (SIMPLYING APPOINTMENT CANCELATION PROCESS)
-        // let sql4;
-        // let value;
+        //CALCULATE APPOINTMENT END TIME
+        const appointmentEndDateTime = new Date(appointmentDateTime.getTime() + parseInt(totalDuration) * 60000);
+        const currentDateTime = new Date();
+        //GENERATE RANDOM APPOINTMENT ID
+        const appointmentId = crypto.randomBytes(16).toString('hex');
 
-        // //BEGIN TRANSACTION
-        // await connection.query('START TRANSACTION');
+        //UPDATE TO APPOINTMENT DATABASE (RMB TO HARD CODE THE ESTIMATED PRICE FIRST SINCE IT IS IMPLEMENTED YET)
+        //STORE THE APPOINTMENT ID TO APPOINTMENT TABLE (SIMPLYING APPOINTMENT CANCELATION PROCESS)
+        let sql4;
 
-        // if (from === 'customer') {
-        //     sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, CUSTOMER_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        //     value = [appointmentId, customerId, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
-        // }
-        // else if (from === 'guest') {
-        //     sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, APPOINTMENT_CUSTOMER_FULL_NAME, APPOINTMENT_CUSTOMER_EMAIL_ADDRESS, APPOINTMENT_CUSTOMER_GENDER, APPOINTMENT_CUSTOMER_AGE, APPOINTMENT_CUSTOMER_CONTACT_NUMBER, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        //     value = [appointmentId, appointDetails.name, appointDetails.email, appointDetails.gender, appointDetails.age, appointDetails.contact, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
-        // }
+        //BEGIN TRANSACTION
+        await connection.query('START TRANSACTION');
 
-        // else {
-        //     throw new Error('No specified Booking from which user');
-        // }
+        //GET CUSTOMER ID OR INSERT TO GUEST TABLE
+        let id = null;
 
-        // const [result] = await connection.execute(sql4, value);
-        // const rowAffected = result.affectedRows;
+        if (username !== null && from === 'customer') {
+            const sql0 = "SELECT CUSTOMER_ID as custId FROM CUSTOMER INNER JOIN USER ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
+            const [userIdResult] = await connection.execute(sql0, [username]);
 
-        // if (rowAffected <= 0) {
-        //     throw new Error('Failed to Insert to Appointment Table')
-        // }
+            const [{ custId }] = userIdResult;
+            if (custId === null) {
+                throw new Error('Failed to Fetch Customer ID');
+            }
+            id = custId;
+        }
+        else if (username === null && from === 'guest') {
 
-        // //UPDATE TO APPOINTMENTSERVICE
-        // for (const serviceCode of appointDetails.selectedServices) {
-        //     const sql5 = "INSERT INTO APPOINTMENTSERVICE (APPOINTMENT_ID, SERVICE_CODE) VALUES (?, ?)";
+            const sqlInsertGuest = "INSERT INTO GUEST (GUEST_FULL_NAME, GUEST_EMAIL_ADDRESS, GUEST_GENDER, GUEST_AGE, GUEST_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
+            const [guestInsertResult] = await connection.execute(sqlInsertGuest, [name, email, gender, age, contact]);
+            const rowAffectedGuest = guestInsertResult.affectedRows;
 
-        //     const [appointmentServiceResult] = await connection.execute(sql5, [appointmentId, serviceCode]);
-        //     const rowAffected2 = appointmentServiceResult.affectedRows;
+            if (rowAffectedGuest <= 0) {
+                throw new Error('Failed to Insert into Guest Table');
+            }
+            id = guestInsertResult.insertId;
 
-        //     if (rowAffected2 <= 0) {
-        //         throw new Error('Failed to Insert into Appointment Service Table');
-        //     }
-        // }
+        }
 
-        // await connection.query('COMMIT');
 
-        // return {
-        //     status: 'success',
-        //     message: 'Appointment Added, Pending Deposit',
-        //     data: {
-        //         appointmentId: appointmentId,
-        //         name: appointDetails.name,
-        //         email: appointDetails.email,
-        //         servicesName: servicesNameString,
-        //         specialist: staffName,
-        //         startDateTime: moment(appointmentDateTime).format('YYYY-MM-DD HH:mm'),
-        //         endDateTime: moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm'),
-        //         estimatedPrice: estimatedPrice !== null ? estimatedPrice : totalPrice,
-        //         depositAmount: depositAmount,
-        //         from: from,
-        //     },
-        // };
+        if (from === 'customer') {
+            sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, CUSTOMER_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+        }
+        else if (from === 'guest') {
+            sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, GUEST_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+        }
+
+        else {
+            throw new Error('No specified Booking from which user');
+        }
+
+        const value = [appointmentId, id, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
+        const [result] = await connection.execute(sql4, value);
+        const rowAffected = result.affectedRows;
+
+        if (rowAffected <= 0) {
+            throw new Error('Failed to Insert to Appointment Table')
+        }
+
+        //UPDATE TO APPOINTMENTSERVICE
+        for (const serviceCode of appointDetails.selectedServices) {
+            const sql5 = "INSERT INTO APPOINTMENTSERVICE (APPOINTMENT_ID, SERVICE_CODE) VALUES (?, ?)";
+
+            const [appointmentServiceResult] = await connection.execute(sql5, [appointmentId, serviceCode]);
+            const rowAffected2 = appointmentServiceResult.affectedRows;
+
+            if (rowAffected2 <= 0) {
+                throw new Error('Failed to Insert into Appointment Service Table');
+            }
+        }
+
+        await connection.query('COMMIT');
+
+        return {
+            status: 'success',
+            message: 'Appointment Added, Pending Deposit',
+            data: {
+                appointmentId: appointmentId,
+                name: name,
+                email: email,
+                servicesName: servicesNameString,
+                specialist: staffName,
+                startDateTime: moment(appointmentDateTime).format('YYYY-MM-DD HH:mm'),
+                endDateTime: moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm'),
+                estimatedPrice: estimatedPrice !== null ? estimatedPrice : totalPrice,
+                depositAmount: depositAmount,
+                from: from,
+            },
+        };
 
     } catch (err) {
-        // await connection.query('ROLLBACK');
+        await connection.query('ROLLBACK');
         throw new Error(err.message);
     }
 }
@@ -647,4 +660,94 @@ const appointmentCancellation = async (appointmentId) => {
 
 }
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, };
+const fetchAppointmentHistorySSFeedback = async (customerId) => {
+    try {
+        const sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE CUSTOMER_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+
+        const [result] = await connection.execute(sql, [customerId]);
+
+        if (result.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Completed Appointments Found, or Feedback has Already been Provided for All Completed Appointments.',
+                data: null,
+            }
+        }
+
+        const reformat = result.map(value => {
+            const options = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'Asia/Kuala_Lumpur' };
+            const dateString = value.appointmentDate.toLocaleDateString('en-MY', options).replace(/\//g, '-');
+            return { ...value, appointmentDate: dateString };
+
+        });
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched Appointments for Feedback',
+            data: reformat,
+        }
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) => {
+    try {
+
+        const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments, selectedFeedbackType } = serviceSpecificFeedbackDetails;
+
+        let category = null;
+        if (selectedFeedbackType === 'serviceSpecificFeedback') {
+            category = 'ServiceSpecific';
+        }
+
+        let type = null;
+        if (feedbackCategory === 'praise') {
+            type = 'Praise';
+        }
+        else if (feedbackCategory === 'improvement') {
+            type = 'Improvement';
+        }
+        else if (feedbackCategory === 'complaint') {
+            type = 'Complaint';
+        }
+        else {
+            throw new Error('Feedback Type Category Not Exists')
+        }
+
+        console.log(serviceSpecificFeedbackDetails)
+        await connection.query('START TRANSACTION');
+
+        //INSERT INTO FEEDBACK TABLE
+        const sql = "INSERT INTO FEEDBACK (APPOINTMENT_ID, FEEDBACK_TYPE, FEEDBACK_CATEGORY, FEEDBACK_COMMENTS, FEEDBACK_OVERALL_SERVICE_RATING, FEEDBACK_CLEANINESS_RATING, FEEDBACK_SERVICE_SATISFACTION_RATING,FEEDBACK_COMMUNICATION_RATING) VALUES (?,?,?,?,?,?,?,?)";
+
+        const [newServiceSpecificFeedbackResult] = await connection.execute(sql, [appointmentId, category, type, feedbackComments, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating]);
+
+        const rowAffectedSSFeedback = newServiceSpecificFeedbackResult.affectedRows;
+
+        if (rowAffectedSSFeedback <= 0) {
+            throw new Error('Failed to Insert into Feedback Table');
+        }
+
+        //CHANGE APPOINTMENT FEEDBACK_RECEIVED TO TRUE (1)
+        const sql2 = "UPDATE APPOINTMENT SET APPOINTMENT_FEEDBACK_RECEIVED = 1 WHERE APPOINTMENT_ID = ?";
+        const [feedbackReceivedResult] = await connection.execute(sql2, [appointmentId]);
+
+        const rowAffectedUpdateAppointment = feedbackReceivedResult.affectedRows;
+
+        if (rowAffectedUpdateAppointment <= 0) {
+            throw new Error('Failed to Failed to Update Appointment Received in Appointment Table');
+        }
+
+        await connection.query('COMMIT');
+        return {
+            status: 'success',
+            message: 'Successfully Submitted Service Specific Feedback',
+        }
+    } catch (err) {
+        await connection.query('ROLLBACK');
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, };

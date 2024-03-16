@@ -96,7 +96,7 @@ const getUserData = async (userId, role) => {
     try {
 
         if (role === 'customer') {
-            const sql = "SELECT CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM CUSTOMER AS c INNER JOIN USER AS u ON c.USER_ID = u.USER_ID";
+            const sql = "SELECT CUSTOMER_ID AS customerId, CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM CUSTOMER AS c INNER JOIN USER AS u ON c.USER_ID = u.USER_ID";
             const [userDataResults] = await connection.execute(sql, ['Customer']);
 
             if (userDataResults.length === 0) {
