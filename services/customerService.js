@@ -1,6 +1,7 @@
 const { connection } = require('../config/dbConnection');
 const { createNewEventinStaffCalendar, getEvents, getSpecialistEvents, checkAvailability, } = require('./calendarService');
 const { convertServicesFormat } = require('../utils/responseFormatter');
+const { hashPassword } = require('./authService');
 const crypto = require('crypto');
 const moment = require('moment');
 
@@ -689,27 +690,23 @@ const fetchAppointmentHistorySSFeedback = async (customerId) => {
     } catch (err) {
         throw new Error(err.message);
     }
-}
+};
 
 const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) => {
     try {
 
         const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments, selectedFeedbackType } = serviceSpecificFeedbackDetails;
 
-        let category = null;
-        if (selectedFeedbackType === 'serviceSpecificFeedback') {
-            category = 'ServiceSpecific';
-        }
 
-        let type = null;
+        let category = null;
         if (feedbackCategory === 'praise') {
-            type = 'Praise';
+            category = 'Praise';
         }
         else if (feedbackCategory === 'improvement') {
-            type = 'Improvement';
+            category = 'Improvement';
         }
         else if (feedbackCategory === 'complaint') {
-            type = 'Complaint';
+            category = 'Complaint';
         }
         else {
             throw new Error('Feedback Type Category Not Exists')
@@ -718,15 +715,15 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
         console.log(serviceSpecificFeedbackDetails)
         await connection.query('START TRANSACTION');
 
-        //INSERT INTO FEEDBACK TABLE
-        const sql = "INSERT INTO FEEDBACK (APPOINTMENT_ID, FEEDBACK_TYPE, FEEDBACK_CATEGORY, FEEDBACK_COMMENTS, FEEDBACK_OVERALL_SERVICE_RATING, FEEDBACK_CLEANINESS_RATING, FEEDBACK_SERVICE_SATISFACTION_RATING,FEEDBACK_COMMUNICATION_RATING) VALUES (?,?,?,?,?,?,?,?)";
+        //INSERT INTO SERVICESPECIFICFEEDBACK TABLE
+        const sql = "INSERT INTO SERVICESPECIFICFEEDBACK (APPOINTMENT_ID, SERVICESPECIFICFEEDBACK_CATEGORY, SERVICESPECIFICFEEDBACK_COMMENTS, SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING,SERVICESPECIFICFEEDBACK_CLEANINESS_RATING, SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING, SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) VALUES (?,?,?,?,?,?,?)";
 
-        const [newServiceSpecificFeedbackResult] = await connection.execute(sql, [appointmentId, category, type, feedbackComments, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating]);
+        const [newServiceSpecificFeedbackResult] = await connection.execute(sql, [appointmentId, category, feedbackComments, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating]);
 
         const rowAffectedSSFeedback = newServiceSpecificFeedbackResult.affectedRows;
 
         if (rowAffectedSSFeedback <= 0) {
-            throw new Error('Failed to Insert into Feedback Table');
+            throw new Error('Failed to Insert into ServiceSpecificFeedback Table');
         }
 
         //CHANGE APPOINTMENT FEEDBACK_RECEIVED TO TRUE (1)
@@ -748,6 +745,127 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
         await connection.query('ROLLBACK');
         throw new Error(err.message);
     }
+};
+
+const submitNewGeneralFeedback = async (generalFeedbackDetails) => {
+
+    try {
+
+        const { gender, age, feedbackCategory, feedbackComments, isAnonymous, name, email } = generalFeedbackDetails;
+
+        //INSERT INTO GENERALFEEDBACK TABLE
+        const sql = "INSERT INTO GENERALFEEDBACK (GENERALFEEDBACK_GENDER, GENERALFEEDBACK_AGE, GENERALFEEDBACK_CATEGORY, GENERALFEEDBACK_COMMENTS, GENERALFEEDBACK_FULL_NAME, GENERALFEEDBACK_EMAIL_ADDRESS) VALUE (?,?,?,?,?,?)";
+
+        const [newGeneralFeedbackResult] = await connection.execute(sql, [gender, age, feedbackCategory, feedbackComments, name !== null ? name : null, email !== null ? email : null]);
+
+        const rowAffectedGeneralFeedback = newGeneralFeedbackResult.affectedRows;
+
+        if (rowAffectedGeneralFeedback <= 0) {
+            throw new Error('Failed to Insert into GeneralFeedback Table');
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Submitted General Feedback',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+
+};
+
+const fetchOwnProfileDetails = async (customerId) => {
+    try {
+        const sql = "SELECT u.USER_USERNAME AS username, c.CUSTOMER_FULL_NAME AS name, u.USER_EMAIL AS email, c.CUSTOMER_CONTACT_NUMBER AS contact, c.CUSTOMER_GENDER AS gender, c.CUSTOMER_BIRTHDATE AS birthdate FROM CUSTOMER c INNER JOIN USER u ON c.USER_ID = u.USER_ID WHERE CUSTOMER_ID = ?";
+
+        const [profileDetailsResult] = await connection.execute(sql, [customerId]);
+
+        if (profileDetailsResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Profile Found',
+                data: null,
+            }
+        }
+        
+        
+        const [profile] = profileDetailsResult;
+
+        return {
+            status: 'success',
+            message: 'Successfully Submitted General Feedback',
+            data: { ...profile, password: null, },
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+const updateNewProfileDetails = async (customerId, profileDetails) => {
+
+    try {
+
+        const { username, name, email, contact, gender, birthdate, password } = profileDetails;
+        //check if password got or not if yes, then encrpytion and store it
+
+        let hashedPassword = null;
+        if (password !== null) {
+            hashedPassword = await hashPassword(password);
+        }
+
+        if (password !== null && (hashedPassword === undefined || hashedPassword === null)) {
+            throw new Error('Failed to Hash Password');
+        }
+
+
+        await connection.query('START TRANSACTION');
+
+        //UPDATE CUSTOMER TABLE
+        const sql = "UPDATE CUSTOMER SET CUSTOMER_FULL_NAME = ?, CUSTOMER_BIRTHDATE = ?, CUSTOMER_CONTACT_NUMBER = ? WHERE CUSTOMER_ID = ?";
+
+        const [updateCustomerResult] = await connection.execute(sql, [name, birthdate, contact, customerId]);
+        const rowAffectedCustomer = updateCustomerResult.affectedRows;
+
+        if (rowAffectedCustomer <= 0) {
+            throw new Error('Failed to Update Customer Profile Details in Customer Table');
+        }
+
+
+        //UPDATE USER TABLE
+
+        let sql2 = null;
+        let params = [];
+        if (password !== null && hashedPassword !== null) {
+            sql2 = "UPDATE USER SET USER_PASSWORD_HASH = ?, USER_EMAIL = ? WHERE USER_USERNAME = ?";
+            params = [hashedPassword, email, username];
+        }
+        else {
+            sql2 = "UPDATE USER SET USER_EMAIL = ? WHERE USER_USERNAME = ?";
+            params = [email, username];
+        }
+
+        const [updateUserResult] = await connection.execute(sql2, params);
+        const rowAffectedUser = updateUserResult.affectedRows;
+
+        if (rowAffectedUser <= 0) {
+            throw new Error('Failed to Update Customer Profile Details in User Table');
+        }
+
+        await connection.query('COMMIT');
+
+        return {
+            status: 'success',
+            message: 'Successfully Updated Customer Profile',
+        }
+
+    } catch (err) {
+        await connection.query('ROLLBACK');
+        throw new Error(err.message);
+    }
+
+
 }
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, };
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, submitNewGeneralFeedback, fetchOwnProfileDetails, updateNewProfileDetails, };

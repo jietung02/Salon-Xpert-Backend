@@ -5,4 +5,6 @@ const reformatAgeCategories = (ageRange) => {
     });
 };
 
-module.exports = { reformatAgeCategories };
+
+
+module.exports = { reformatAgeCategories, };

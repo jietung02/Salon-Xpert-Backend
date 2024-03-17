@@ -267,4 +267,4 @@ const hashPassword = async (plaintextPassword) => {
     return hash;
 }
 
-module.exports = { userRegistration, userAuthentication, getGuestAuthData };
+module.exports = { userRegistration, userAuthentication, getGuestAuthData, hashPassword, };
