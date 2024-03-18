@@ -102,6 +102,7 @@ const deleteExistingService = async (serviceCode) => {
 
 const fetchAllStaffProfiles = async () => {
     try {
+
         const sql = "SELECT s.STAFF_ID AS staffId, u.USER_USERNAME AS staffUsername, s.STAFF_FULL_NAME AS staffName, r.ROLE_NAME AS staffRoleName, s.ROLE_CODE AS staffRoleCode, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS servicesProvided,GROUP_CONCAT(svc.SERVICE_CODE SEPARATOR ', ') AS serviceCodes, u.USER_EMAIL AS staffEmail, s.STAFF_CONTACT_NUMBER AS staffContact, s.STAFF_BIO AS staffBio FROM STAFF s INNER JOIN USER u ON s.USER_ID = u.USER_ID LEFT JOIN ROLE r ON s.ROLE_CODE = r.ROLE_CODE LEFT JOIN STAFFSPECIALTY ss ON s.STAFF_ID = ss.STAFF_ID LEFT JOIN SERVICE svc ON ss.SERVICE_CODE = svc.SERVICE_CODE GROUP BY staffId ORDER BY staffUsername";
 
 
