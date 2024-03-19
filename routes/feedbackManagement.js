@@ -20,7 +20,7 @@ router.get('/:feedbackType', async (req, res) => {
         return res.status(200).json(response);
 
     } catch (error) {
-        res.status(500).json({ status: 'error', message: error.message, data: null, additionalData: null, })
+        res.status(500).json({ status: 'error', message: error.message, data: null, })
     }
 });
 

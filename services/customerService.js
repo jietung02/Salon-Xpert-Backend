@@ -114,8 +114,8 @@ const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
             return accum;
         }, totalBasedPrice);
         console.log(totalEstimatedPrice)
-
-        return totalEstimatedPrice.toFixed(2);
+        
+        return totalEstimatedPrice;
 
     } catch (err) {
         throw new Error(err.message);
