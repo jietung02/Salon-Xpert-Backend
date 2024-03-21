@@ -2,6 +2,7 @@ const { response } = require('express');
 const { google, calendar_v3 } = require('googleapis');
 
 const scopes = process.env.GOOGLE_SCOPES;
+const scopesArr = scopes.split(',');
 const private_key = process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n");
 const client_email = process.env.GOOGLE_CLIENT_EMAIL;
 const project_number = process.env.GOOGLE_PROJECT_NUMBER;
@@ -11,9 +12,27 @@ const jwtClient = new google.auth.JWT(
     client_email,
     null,
     private_key,
-    scopes
+    scopesArr,
+    
 );
 
+// const jwtClient = new google.auth.JWT({
+//     email:client_email,
+//     key:private_key,
+//     scopes: scopesArr,
+//     subject: client_email,
+    
+// });
+// const jwtClient = new google.auth.GoogleAuth({
+//     keyFile: "config/calendarService.json",
+//     scopes: [
+//       'https://www.googleapis.com/auth/calendar',
+//       'https://www.googleapis.com/auth/calendar.events'
+//     ],
+//     clientOptions: {
+//       subject: client_email
+//     },
+// });
 const calendar = google.calendar({
     version: 'v3',
     project: project_number,
@@ -147,7 +166,7 @@ const getSpecialistEvents = async (calId, date) => {
 const createNewEventinStaffCalendar = async (eventDetails) => {
     try {
         console.log(eventDetails)
-        const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, } = eventDetails;
+        const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, specialist } = eventDetails;
 
         const startDateTime = new Date(selectedTime);
         const endDateTime = new Date(selectedEndTime);
@@ -158,7 +177,7 @@ const createNewEventinStaffCalendar = async (eventDetails) => {
             requestBody: {
                 id: appointmentId,
                 summary: `Appointment with ${name}`,
-                description: `Schedule Event for ${servicesName}.`,
+                description: `Schedule Event for ${servicesName} with ${specialist} (Staff).`,
                 start: {
                     dateTime: startDateTime,
                     timeZone: 'Asia/Kuala_Lumpur',
