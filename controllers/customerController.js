@@ -1,6 +1,6 @@
 const { calendar } = require('googleapis/build/src/apis/calendar');
 const { userRegistration, } = require('../services/authService');
-const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, submitNewGeneralFeedback, fetchOwnProfileDetails, updateNewProfileDetails, } = require('../services/customerService');
+const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, } = require('../services/customerService');
 
 const registerUser = async (userData) => {
 
@@ -110,9 +110,9 @@ const payDeposit = async (summaryDetails) => {
     }
 }
 
-const fetchAppointmentHistoryFeedback = async (customerId) => {
+const fetchAppointmentHistoryFeedback = async (details) => {
     try {
-        const response = await fetchAppointmentHistorySSFeedback(customerId);
+        const response = await fetchAppointmentHistorySSFeedback(details);
         return response;
     } catch (err) {
         throw new Error(err.message);
@@ -122,15 +122,6 @@ const fetchAppointmentHistoryFeedback = async (customerId) => {
 const submitServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) => {
     try {
         const response = await submitNewServiceSpecificFeedback(serviceSpecificFeedbackDetails);
-        return response;
-    } catch (err) {
-        throw new Error(err.message);
-    }
-}
-
-const submitGeneralFeedback = async (generalFeedbackDetails) => {
-    try {
-        const response = await submitNewGeneralFeedback(generalFeedbackDetails);
         return response;
     } catch (err) {
         throw new Error(err.message);
@@ -155,4 +146,4 @@ const updateProfileDetails = async (customerId, profileDetails) => {
     }
 }
 
-module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, submitGeneralFeedback, fetchProfileDetails, updateProfileDetails, };
+module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, };

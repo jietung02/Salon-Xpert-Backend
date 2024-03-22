@@ -1,32 +1,8 @@
 const { connection } = require('../config/dbConnection');
 
-const fetchAllFeedback = async (feedbackType) => {
+const fetchAllFeedback = async () => {
     try {
-        let table = null;
-        if (feedbackType === 'service-specific') {
-            table = 'SERVICESPECIFICFEEDBACK';
-        }
-        else if (feedbackType === 'general') {
-            table = 'GENERALFEEDBACK';
-        }
-        else {
-            return {
-                status: 'error',
-                message: 'No Feedback Type Found',
-                data: null,
-            }
-        }
-
-
-        let sql = null;
-
-        if (table === 'SERVICESPECIFICFEEDBACK') {
-            sql = "SELECT ssf.APPOINTMENT_ID AS appointmentId, c.CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, c.CUSTOMER_BIRTHDATE, CURDATE()) AS age, ssf.SERVICESPECIFICFEEDBACK_CATEGORY AS feedbackCategory, ssf.SERVICESPECIFICFEEDBACK_COMMENTS AS feedbackComments, ssf.SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING AS overallRating, ssf.SERVICESPECIFICFEEDBACK_CLEANINESS_RATING AS cleanlinessRating, ssf.SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING AS satisfactionWithResultRating, ssf.SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING AS communicationRating, ssf.SERVICESPECIFICFEEDBACK_CREATED_DATE AS feedbackCreatedDate FROM SERVICESPECIFICFEEDBACK ssf INNER JOIN APPOINTMENT a ON ssf.APPOINTMENT_ID = a.APPOINTMENT_ID INNER JOIN CUSTOMER c ON a.CUSTOMER_ID = c.CUSTOMER_ID";
-        }
-        else if (table === 'GENERALFEEDBACK') {
-            sql = "SELECT GENERALFEEDBACK_GENDER as gender, GENERALFEEDBACK_AGE AS age, GENERALFEEDBACK_CATEGORY AS feedbackCategory, GENERALFEEDBACK_COMMENTS AS feedbackComments, GENERALFEEDBACK_CREATED_DATE AS feedbackCreatedDate FROM GENERALFEEDBACK";
-        }
-        
+        const sql = "SELECT ssf.APPOINTMENT_ID AS appointmentId, COALESCE(c.CUSTOMER_GENDER, g.GUEST_GENDER) AS gender, CASE WHEN c.CUSTOMER_ID IS NOT NULL THEN TIMESTAMPDIFF(YEAR, c.CUSTOMER_BIRTHDATE, CURDATE())ELSE g.GUEST_AGE END AS age, ssf.SERVICESPECIFICFEEDBACK_CATEGORY AS feedbackCategory, ssf.SERVICESPECIFICFEEDBACK_COMMENTS AS feedbackComments, ssf.SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING AS overallRating, ssf.SERVICESPECIFICFEEDBACK_CLEANINESS_RATING AS cleanlinessRating, ssf.SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING AS satisfactionWithResultRating, ssf.SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING AS communicationRating, ssf.SERVICESPECIFICFEEDBACK_CREATED_DATE AS feedbackCreatedDate FROM SERVICESPECIFICFEEDBACK ssf INNER JOIN APPOINTMENT a ON ssf.APPOINTMENT_ID = a.APPOINTMENT_ID LEFT JOIN CUSTOMER c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN GUEST g ON a.GUEST_ID = g.GUEST_ID";
 
         const [feeedbackResult] = await connection.execute(sql);
 

@@ -4,16 +4,10 @@ const router = express.Router();
 const { fetchFeedback, } = require('../controllers/feedbackManagementController');
 
 //Review Feedback
-router.get('/:feedbackType', async (req, res) => {
+router.get('/', async (req, res) => {
 
     try {
-
-        const feedbackType = req.params.feedbackType;
-
-        if (feedbackType === undefined || feedbackType === null) {
-            return res.status(400).json({ status: 'error', message: 'No Feedback Type Provided' });
-        }
-        const response = await fetchFeedback(feedbackType);
+        const response = await fetchFeedback();
         if (response.status === 'error') {
             return res.status(404).json(response);
         }

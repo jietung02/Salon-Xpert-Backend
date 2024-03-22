@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const { connection } = require('../config/dbConnection');
 const { adminPermissions } = require('../utils/adminPermissions');
+const { guestPermissions } = require('../utils/guestPermissions');
 
 const getGuestAuthData = async () => {
     try {
@@ -16,8 +17,8 @@ const getGuestAuthData = async () => {
             role: null,
             permissions: [
                 {
-                    rolePermission: 'Guest Dashboard',
-                    functions: [{ name: 'Book Appointment', route: 'guest/new-appointment' }, { name: 'General Feedback', route: 'guest/general-feedback' }]
+                    rolePermission: 'Guest',
+                    functions: [{ name: 'Book Appointment', route: 'guest/new-appointment' },]
                 },
             ],
             token: null,
@@ -96,7 +97,20 @@ const getUserData = async (userId, role) => {
     try {
 
         if (role === 'customer') {
-            const sql = "SELECT CUSTOMER_ID AS customerId, CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM CUSTOMER AS c INNER JOIN USER AS u ON c.USER_ID = u.USER_ID WHERE c.USER_ID = ?";
+            const sql = "SELECT CUSTOMER_ID AS id, CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM CUSTOMER AS c INNER JOIN USER AS u ON c.USER_ID = u.USER_ID WHERE c.USER_ID = ?";
+            const [userDataResults] = await connection.execute(sql, [userId]);
+
+            if (userDataResults.length === 0) {
+                throw new Error('No User Data Found');
+            }
+
+            const [userData] = userDataResults;
+
+            return userData;
+        }
+
+        else if (role === 'guest') {
+            const sql = "SELECT g.GUEST_ID AS id, g.GUEST_FULL_NAME AS name, u.USER_EMAIL AS email, g.GUEST_GENDER AS gender, g.GUEST_AGE AS age, g.GUEST_CONTACT_NUMBER AS contact FROM GUEST g INNER JOIN USER u ON g.USER_ID = u.USER_ID WHERE u.USER_ID = ? ORDER BY g.GUEST_ID DESC LIMIT 1";
             const [userDataResults] = await connection.execute(sql, [userId]);
 
             if (userDataResults.length === 0) {
@@ -150,8 +164,14 @@ const fetchUserPermissions = async (userId, role) => {
 
             return permissions;
         }
+        else if (role === 'guest') {
+            const permissions = getGuestPermissions();
+
+            return permissions;
+        }
+
         else if (role === 'admin') {
-            const permissions = getAdminPermission();
+            const permissions = getAdminPermissions();
 
             return permissions;
             // return the hard coded access to admin
@@ -178,7 +198,11 @@ const fetchUserPermissions = async (userId, role) => {
     }
 }
 
-const getAdminPermission = () => {
+const getGuestPermissions = () => {
+    return guestPermissions;
+}
+
+const getAdminPermissions = () => {
     return adminPermissions;
 }
 

@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, submitGeneralFeedback, fetchProfileDetails, updateProfileDetails, } = require('../controllers/customerController');
+const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, } = require('../controllers/customerController');
 const { getCalendar, createNewCalendar, checkTimeAvailability, } = require('../services/calendarService');
 
 //This register, appointment new, and general feedback, no need middleware
@@ -247,9 +247,9 @@ router.post('/feedback/service-specific-feedback/submit', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Missing Service Specific Feedback Details' });
     }
 
-    const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments, selectedFeedbackType } = serviceSpecificFeedbackDetails;
+    const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments } = serviceSpecificFeedbackDetails;
 
-    if (appointmentId === null || overallServiceRating === null || cleaninessRating === null || serviceSatisfactionRating === null || communicationRating === null || feedbackCategory === null || feedbackComments === null || selectedFeedbackType === null) {
+    if (appointmentId === null || overallServiceRating === null || cleaninessRating === null || serviceSatisfactionRating === null || communicationRating === null || feedbackCategory === null || feedbackComments === null) {
       return res.status(400).json({ status: 'error', message: 'Missing Service Specific Feedback Details' });
     }
 
@@ -264,47 +264,24 @@ router.post('/feedback/service-specific-feedback/submit', async (req, res) => {
   }
 });
 
-router.post('/feedback/general-feedback/submit', async (req, res) => {
+
+router.post('/feedback/service-specific-feedback/:id', async (req, res) => {
 
   try {
 
-    const generalFeedbackDetails = req.body;
-
-    if (generalFeedbackDetails === undefined || generalFeedbackDetails === null) {
-      return res.status(400).json({ status: 'error', message: 'Missing General Feedback Details' });
+    const details = req.body;
+    console.log(details)
+    if (details === undefined || details === null) {
+      return res.status(400).json({ status: 'error', message: 'No ID or Role Provided' });
     }
 
-    const { gender, age, feedbackCategory, feedbackComments, isAnonymous, name, email } = generalFeedbackDetails;
+    const { id, role } = details;
 
-    if (gender === null || age === null || feedbackCategory === null || feedbackComments === null || isAnonymous === null) {
-      return res.status(400).json({ status: 'error', message: 'Missing Service Specific Feedback Details' });
+    if (id === null || role === null) {
+      return res.status(400).json({ status: 'error', message: 'No ID or Role Provided' });
     }
 
-    if (isAnonymous === 'no' && name === null && email === null) {
-      return res.status(400).json({ status: 'error', message: 'No Name and Email Provided for Non-Anonymous Feedback' });
-    }
-
-    const response = await submitGeneralFeedback(generalFeedbackDetails);
-    if (response.status === 'error') {
-      return res.status(404).json(response);
-    }
-    return res.status(200).json(response);
-
-  } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message })
-  }
-});
-
-router.get('/feedback/service-specific-feedback/:customerId', async (req, res) => {
-
-  try {
-    const customerId = req.params.customerId;
-
-    if (customerId === undefined || customerId === null) {
-      return res.status(400).json({ status: 'error', message: 'No Customer ID Provided' });
-    }
-
-    const response = await fetchAppointmentHistoryFeedback(customerId);
+    const response = await fetchAppointmentHistoryFeedback(details);
     if (response.status === 'error') {
       return res.status(404).json(response);
     }

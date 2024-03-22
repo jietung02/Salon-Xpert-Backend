@@ -114,7 +114,7 @@ const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
             return accum;
         }, totalBasedPrice);
         console.log(totalEstimatedPrice)
-        
+
         return totalEstimatedPrice;
 
     } catch (err) {
@@ -218,8 +218,35 @@ const createNewAppointment = async (appointDetails) => {
         }
         else if (username === null && from === 'guest') {
 
-            const sqlInsertGuest = "INSERT INTO GUEST (GUEST_FULL_NAME, GUEST_EMAIL_ADDRESS, GUEST_GENDER, GUEST_AGE, GUEST_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
-            const [guestInsertResult] = await connection.execute(sqlInsertGuest, [name, email, gender, age, contact]);
+            let userId = null;
+            //CHECK EMAIL EXIST IN USER TABLE
+            const sqlEmailExists = "SELECT COUNT(*) as isExists FROM USER WHERE USER_USERNAME = ?";
+            const [guestUserExists] = await connection.execute(sqlEmailExists, [email]);
+            const [{ isExists }] = guestUserExists;
+            console.log(isExists)
+
+            if (isExists === 0) {
+                //INSERT INTO USER TABLE
+
+                const hashedPassword = await hashPassword(name);
+                const sqlInsertUser = "INSERT INTO USER (USER_USERNAME, USER_PASSWORD_HASH, USER_EMAIL, USER_ROLE) VALUES (?, ?, ?, ?)";
+                const [guestUserInsertResult] = await connection.execute(sqlInsertUser, [email, hashedPassword, email, 'guest']);
+                const rowAffectedGuestUser = guestUserInsertResult.affectedRows;
+
+                if (rowAffectedGuestUser <= 0) {
+                    throw new Error('Failed to Insert into User Table (Guest)');
+                }
+                userId = guestUserInsertResult.insertId;
+            } else {
+                const sqlUserId = "SELECT USER_ID as userId FROM USER WHERE USER_USERNAME = ?";
+                const [guestUserIdResult] = await connection.execute(sqlUserId, [email]);
+                [{ userId }] = guestUserIdResult;
+                userId = userId;
+                console.log(userId)
+            }
+
+            const sqlInsertGuest = "INSERT INTO GUEST (USER_ID, GUEST_FULL_NAME, GUEST_GENDER, GUEST_AGE, GUEST_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
+            const [guestInsertResult] = await connection.execute(sqlInsertGuest, [userId, name, gender, age, contact]);
             const rowAffectedGuest = guestInsertResult.affectedRows;
 
             if (rowAffectedGuest <= 0) {
@@ -661,11 +688,21 @@ const appointmentCancellation = async (appointmentId) => {
 
 }
 
-const fetchAppointmentHistorySSFeedback = async (customerId) => {
+const fetchAppointmentHistorySSFeedback = async (details) => {
     try {
-        const sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE CUSTOMER_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+        const {id, role} = details;
+ 
+        let sql = null;
 
-        const [result] = await connection.execute(sql, [customerId]);
+        if (role === 'customer') {
+            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE CUSTOMER_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+        }
+
+        else if (role === 'guest') {
+            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE GUEST_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+        }
+
+        const [result] = await connection.execute(sql, [id]);
 
         if (result.length === 0) {
             return {
@@ -695,7 +732,7 @@ const fetchAppointmentHistorySSFeedback = async (customerId) => {
 const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) => {
     try {
 
-        const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments, selectedFeedbackType } = serviceSpecificFeedbackDetails;
+        const { appointmentId, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating, feedbackCategory, feedbackComments } = serviceSpecificFeedbackDetails;
 
 
         let category = null;
@@ -747,34 +784,6 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
     }
 };
 
-const submitNewGeneralFeedback = async (generalFeedbackDetails) => {
-
-    try {
-
-        const { gender, age, feedbackCategory, feedbackComments, isAnonymous, name, email } = generalFeedbackDetails;
-
-        //INSERT INTO GENERALFEEDBACK TABLE
-        const sql = "INSERT INTO GENERALFEEDBACK (GENERALFEEDBACK_GENDER, GENERALFEEDBACK_AGE, GENERALFEEDBACK_CATEGORY, GENERALFEEDBACK_COMMENTS, GENERALFEEDBACK_FULL_NAME, GENERALFEEDBACK_EMAIL_ADDRESS) VALUE (?,?,?,?,?,?)";
-
-        const [newGeneralFeedbackResult] = await connection.execute(sql, [gender, age, feedbackCategory, feedbackComments, name !== null ? name : null, email !== null ? email : null]);
-
-        const rowAffectedGeneralFeedback = newGeneralFeedbackResult.affectedRows;
-
-        if (rowAffectedGeneralFeedback <= 0) {
-            throw new Error('Failed to Insert into GeneralFeedback Table');
-        }
-
-        return {
-            status: 'success',
-            message: 'Successfully Submitted General Feedback',
-        }
-
-    } catch (err) {
-        throw new Error(err.message);
-    }
-
-};
-
 const fetchOwnProfileDetails = async (customerId) => {
     try {
         const sql = "SELECT u.USER_USERNAME AS username, c.CUSTOMER_FULL_NAME AS name, u.USER_EMAIL AS email, c.CUSTOMER_CONTACT_NUMBER AS contact, c.CUSTOMER_GENDER AS gender, c.CUSTOMER_BIRTHDATE AS birthdate FROM CUSTOMER c INNER JOIN USER u ON c.USER_ID = u.USER_ID WHERE CUSTOMER_ID = ?";
@@ -788,8 +797,8 @@ const fetchOwnProfileDetails = async (customerId) => {
                 data: null,
             }
         }
-        
-        
+
+
         const [profile] = profileDetailsResult;
 
         return {
@@ -868,4 +877,4 @@ const updateNewProfileDetails = async (customerId, profileDetails) => {
 
 }
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, submitNewGeneralFeedback, fetchOwnProfileDetails, updateNewProfileDetails, };
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, };
