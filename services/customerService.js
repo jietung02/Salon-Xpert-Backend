@@ -690,8 +690,8 @@ const appointmentCancellation = async (appointmentId) => {
 
 const fetchAppointmentHistorySSFeedback = async (details) => {
     try {
-        const {id, role} = details;
- 
+        const { id, role } = details;
+
         let sql = null;
 
         if (role === 'customer') {
@@ -874,7 +874,54 @@ const updateNewProfileDetails = async (customerId, profileDetails) => {
         throw new Error(err.message);
     }
 
+};
 
-}
+const fetchAppointmentDetails = async (appointmentId) => {
+    try {
+        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, s.STAFF_FULL_NAME as staffName, a.APPOINTMENT_FINAL_PRICE AS finalPrice, a.APPOINTMENT_END_DATE_TIME AS appointmentDateTime, a.APPOINTMENT_DEPOSIT_AMOUNT AS depositPaid, a.APPOINTMENT_FINAL_PRICE - a.APPOINTMENT_DEPOSIT_AMOUNT AS remainingAmount FROM APPOINTMENT a INNER JOIN APPOINTMENTSERVICE asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN SERVICE svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE INNER JOIN STAFF s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN CUSTOMER c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN GUEST g ON a.GUEST_ID = g.GUEST_ID INNER JOIN USER u ON (a.CUSTOMER_ID IS NOT NULL AND u.USER_ID = c.USER_ID) OR (a.GUEST_ID IS NOT NULL AND u.USER_ID = g.USER_ID) WHERE a.APPOINTMENT_STATUS = 'PendingFinalPayment' && a.APPOINTMENT_ID = ? GROUP BY a.APPOINTMENT_ID";
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, };
+
+        const [appointmentDetailsResult] = await connection.execute(sql, [appointmentId]);
+
+        if (appointmentDetailsResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Appointment Details Found or Invalid Appointment ID',
+                data: null,
+            }
+        }
+        const [appointmentDetails] = appointmentDetailsResult;
+        return {
+            status: 'success',
+            message: 'Successfully Fetched Appointment Details',
+            data: appointmentDetails,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+const makeFinalPayment = async (appointmentId) => {
+    try {
+        const sql = "UPDATE APPOINTMENT SET APPOINTMENT_STATUS = 'Completed' WHERE APPOINTMENT_ID = ?";
+
+
+        const [completedAppointmentResult] = await connection.execute(sql, [appointmentId]);
+        const rowAffectedAppointmentStatus = completedAppointmentResult.affectedRows;
+
+        if (rowAffectedAppointmentStatus <= 0) {
+            throw new Error('Failed to Update Appointment Status to Completed in Appointment Table');
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Updated Appointment Status to Completed',
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails,makeFinalPayment, };

@@ -121,6 +121,19 @@ const getUserData = async (userId, role) => {
 
             return userData;
         }
+
+        else if (role === 'staff') {
+            const sql = "SELECT s.STAFF_ID AS id, s.STAFF_FULL_NAME AS name, s.STAFF_CONTACT_NUMBER AS contact, u.USER_EMAIL AS email FROM STAFF s INNER JOIN USER u ON s.USER_ID = u.USER_ID WHERE u.USER_ID = ?";
+            const [userDataResults] = await connection.execute(sql, [userId]);
+            console.log(userDataResults)
+            if (userDataResults.length === 0) {
+                throw new Error('No User Data Found');
+            }
+
+            const [userData] = userDataResults;
+
+            return userData;
+        }
         //ONLY CUSTOMER IS REQUIRED FOR THIS
 
         // else if (role === 'admin') {

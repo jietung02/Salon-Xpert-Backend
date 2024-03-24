@@ -15,7 +15,7 @@ const fetchAllStaffCalendarIds = async () => {
         }
 
         const reformatToStringUrl = calIdsResult.map(value => `src=${value.calendarId}`).join('&');
-        console.log(reformatToStringUrl)
+
         return {
             status: 'success',
             message: 'Successfully Fetched All Roles',

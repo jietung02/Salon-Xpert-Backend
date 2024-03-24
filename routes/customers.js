@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, } = require('../controllers/customerController');
+const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, } = require('../controllers/customerController');
 const { getCalendar, createNewCalendar, checkTimeAvailability, } = require('../services/calendarService');
 
 //This register, appointment new, and general feedback, no need middleware
@@ -338,6 +338,50 @@ router
     req.params.userId
     res.send('Customer Delete');
   });
+
+//Payment
+router.put('/payment/pay/:appointmentId', async (req, res) => {
+
+  try {
+    const appointmentId = req.params.appointmentId;
+
+    if (appointmentId === undefined || appointmentId === null) {
+      return res.status(400).json({ status: 'error', message: 'No Appointment ID Provided' });
+    }
+
+    const response = await makePayment(appointmentId);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message})
+  }
+});
+
+router.post('/payment/:appointmentId', async (req, res) => {
+
+  try {
+    const appointmentId = req.params.appointmentId;
+
+    if (appointmentId === undefined || appointmentId === null) {
+      return res.status(400).json({ status: 'error', message: 'No Appointment ID Provided' });
+    }
+
+    const response = await fetchAppointment(appointmentId);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+
+
 
 module.exports = router;
 //make sure to place static route on top, as js will go top to bottom

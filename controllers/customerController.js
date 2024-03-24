@@ -1,6 +1,6 @@
 const { calendar } = require('googleapis/build/src/apis/calendar');
 const { userRegistration, } = require('../services/authService');
-const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, } = require('../services/customerService');
+const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, } = require('../services/customerService');
 
 const registerUser = async (userData) => {
 
@@ -146,4 +146,22 @@ const updateProfileDetails = async (customerId, profileDetails) => {
     }
 }
 
-module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, };
+const fetchAppointment = async (appointmentId) => {
+    try {
+        const response = await fetchAppointmentDetails(appointmentId);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+const makePayment = async (appointmentId) => {
+    try {
+        const response = await makeFinalPayment(appointmentId);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, };
