@@ -698,8 +698,9 @@ const fetchAppointmentHistorySSFeedback = async (details) => {
             sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE CUSTOMER_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
         }
 
+        //The ID from Guest is the User ID Not Guest ID
         else if (role === 'guest') {
-            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE GUEST_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE GUEST_ID IN (SELECT GUEST_ID FROM GUEST WHERE USER_ID = ?) AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
         }
 
         const [result] = await connection.execute(sql, [id]);

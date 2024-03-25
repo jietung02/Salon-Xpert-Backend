@@ -1,4 +1,4 @@
-const { fetchAllSpecialists } = require('../services/reportsService');
+const { fetchAllSpecialists, generateSelectedReport, } = require('../services/reportsService');
 
 
 const fetchSpecialists = async () => {
@@ -10,4 +10,13 @@ const fetchSpecialists = async () => {
     }
 }
 
-module.exports = { fetchSpecialists };
+const generateReport = async (reportDetails) => {
+    try {
+        const response = await generateSelectedReport(reportDetails);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { fetchSpecialists, generateReport, };

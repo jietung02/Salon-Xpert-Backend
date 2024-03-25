@@ -95,7 +95,7 @@ const userAuthentication = async (username, password) => {
 
 const getUserData = async (userId, role) => {
     try {
-
+        //ID for Customer is Customer ID
         if (role === 'customer') {
             const sql = "SELECT CUSTOMER_ID AS id, CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM CUSTOMER AS c INNER JOIN USER AS u ON c.USER_ID = u.USER_ID WHERE c.USER_ID = ?";
             const [userDataResults] = await connection.execute(sql, [userId]);
@@ -109,8 +109,9 @@ const getUserData = async (userId, role) => {
             return userData;
         }
 
+        //ID for Guest is User ID (Since in the guest table they will have repeated data, therefore cannot fetch Appointment for feedback as 1 appointment ID for 1 guest ID)
         else if (role === 'guest') {
-            const sql = "SELECT g.GUEST_ID AS id, g.GUEST_FULL_NAME AS name, u.USER_EMAIL AS email, g.GUEST_GENDER AS gender, g.GUEST_AGE AS age, g.GUEST_CONTACT_NUMBER AS contact FROM GUEST g INNER JOIN USER u ON g.USER_ID = u.USER_ID WHERE u.USER_ID = ? ORDER BY g.GUEST_ID DESC LIMIT 1";
+            const sql = "SELECT u.USER_ID AS id, g.GUEST_FULL_NAME AS name, u.USER_EMAIL AS email, g.GUEST_GENDER AS gender, g.GUEST_AGE AS age, g.GUEST_CONTACT_NUMBER AS contact FROM GUEST g INNER JOIN USER u ON g.USER_ID = u.USER_ID WHERE u.USER_ID = ? ORDER BY g.GUEST_ID DESC LIMIT 1";
             const [userDataResults] = await connection.execute(sql, [userId]);
 
             if (userDataResults.length === 0) {
