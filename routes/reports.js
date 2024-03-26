@@ -1,7 +1,7 @@
 const express = require('express');
 
 const router = express.Router();
-
+const path = require('path');
 const { fetchSpecialists, generateReport, } = require('../controllers/reportsController');
 
 
@@ -59,6 +59,17 @@ router.post('/generate', async (req, res) => {
     }
 });
 
+router.get('/staff-performance-report/layout', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(path.join(__dirname, '../reportsLayout', 'staffPerformanceReport.rdlx-json'));
+
+});
+
+router.get('/feedback-report/layout', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(path.join(__dirname, '../reportsLayout', 'feedbackReport.rdlx-json'));
+
+});
 
 
 module.exports = router;

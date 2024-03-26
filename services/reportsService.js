@@ -1,4 +1,5 @@
 const { connection } = require('../config/dbConnection');
+const moment = require('moment');
 
 const fetchAllSpecialists = async () => {
     try {
@@ -90,7 +91,9 @@ const generateStaffPerformanceReport = async (selectedSpecialist) => {
         return {
             status: 'success',
             message: 'Successfully Fetched Staff Performance Data',
-            data: reformat,
+            data: {
+                staffPerformance: reformat,
+            }
         }
 
     } catch (err) {
@@ -99,7 +102,67 @@ const generateStaffPerformanceReport = async (selectedSpecialist) => {
 }
 
 const generateFeedbackReport = async (dateFrom, dateTo) => {
+    try {
+        const sql = "SELECT AVG(SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING) AS averageOverallServiceRatings, AVG(SERVICESPECIFICFEEDBACK_CLEANINESS_RATING) AS averageCleanlinessRatings, AVG(SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING) AS averageServiceSatisfactionRatings, AVG(SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) AS averageCommunicationRatings FROM SERVICESPECIFICFEEDBACK WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ?";
 
+        const [feedbackResult] = await connection.execute(sql, [dateFrom, dateTo]);
+
+        if (feedbackResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Feedback & Ratings Found',
+                data: null,
+            }
+        }
+        const [feedback] = feedbackResult;
+
+        //FETCH GROUP CATEGORY COMMENTS
+        const sql2 = "SELECT SERVICESPECIFICFEEDBACK_CATEGORY AS category, GROUP_CONCAT(SERVICESPECIFICFEEDBACK_COMMENTS) AS comments FROM SERVICESPECIFICFEEDBACK WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ? GROUP BY SERVICESPECIFICFEEDBACK_CATEGORY";
+        const [commentsResult] = await connection.execute(sql2, [dateFrom, dateTo]);
+
+        if (commentsResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Feedback Comments Found',
+                data: null,
+            }
+        }
+        const reformat = commentsResult.map((value) => {
+            const comments = value.comments.split(',');
+            if (value.category === 'Praise') {
+                return {
+                    category: 'Praise and Positive Feedback',
+                    comments: comments,
+                }
+            }
+            else if (value.category === 'Improvement') {
+                return {
+                    category: 'Suggestions for Improvement',
+                    comments: comments,
+                }
+            }
+            else if (value.category === 'Complaint') {
+                return {
+                    category: 'Complaints and Concerns',
+                    comments: comments,
+                }
+            }
+        })
+
+        const dateRange = `${moment(dateFrom).format('DD/MM/YYYY')} - ${moment(dateTo).format('DD/MM/YYYY')}`;
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched Staff Performance Data',
+            data: {
+                feedbackRatings: { ...feedback, dateRange },
+                comments: reformat,
+            }
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
 }
 
 const generateRevenueReport = async (dateFrom, dateTo) => {
