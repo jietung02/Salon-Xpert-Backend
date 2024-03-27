@@ -71,5 +71,10 @@ router.get('/feedback-report/layout', async (req, res) => {
 
 });
 
+router.get('/revenue-report/layout', async (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.sendFile(path.join(__dirname, '../reportsLayout', 'revenueReport.rdlx-json'));
+
+});
 
 module.exports = router;

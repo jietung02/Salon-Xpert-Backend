@@ -45,10 +45,6 @@ const generateSelectedReport = async (reportDetails) => {
             throw new Error('Selected Report Not Exists')
         }
 
-        if (response.status === 'error') {
-
-        }
-
         return response;
 
     } catch (err) {
@@ -166,7 +162,80 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
 }
 
 const generateRevenueReport = async (dateFrom, dateTo) => {
+    try {
 
+        const sql = "SELECT SUM(APPOINTMENT_FINAL_PRICE) AS totalRevenue FROM APPOINTMENT WHERE APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
+
+        const [totalRevenueResult] = await connection.execute(sql, [dateFrom, dateTo]);
+
+        if (totalRevenueResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Feedback & Ratings Found',
+                data: null,
+            }
+        }
+
+        const [{totalRevenue}] = totalRevenueResult;
+
+
+        //FETCH EACH SERVICE COUNT AND TOTAL REVENUE GENERATED (BASED PRICE)
+        const sql2 = "SELECT s.SERVICE_NAME AS serviceName, COUNT(*) AS serviceCounts, (COUNT(*) * SERVICE_BASED_PRICE) AS totalGeneratedSales FROM APPOINTMENT a INNER JOIN APPOINTMENTSERVICE asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN SERVICE s ON asvc.SERVICE_CODE = s.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? GROUP BY s.SERVICE_NAME";
+        const [serviceRevenueResult] = await connection.execute(sql2, [dateFrom, dateTo]);
+
+        if (serviceRevenueResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Service Revenue Generated Found',
+                data: null,
+            }
+        }   
+
+        //GET TIMESLOT REVENUE DISTRIBUTION
+        const sql3 = "SELECT timeSlotTable.timeSlot, COALESCE(SUM(CASE WHEN APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? THEN APPOINTMENT_FINAL_PRICE ELSE 0 END), 0) AS revenue FROM (SELECT 'Morning' AS timeSlot UNION ALL SELECT 'Afternoon' UNION ALL SELECT 'Evening') AS timeSlotTable LEFT JOIN APPOINTMENT ON CASE WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 6 AND 11 THEN 'Morning' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 12 AND 17 THEN 'Afternoon' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 18 AND 23 THEN 'Evening' END = timeSlotTable.timeSlot GROUP BY timeSlotTable.timeSlot";
+
+        const [timeSlotsResult] = await connection.execute(sql3, [dateFrom, dateTo]);
+        
+
+        if (timeSlotsResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No TimeSlots Revenue Distribution Found',
+                data: null,
+            }
+        }
+
+        //FETCH BOOKING TRENDS
+        const sql4 = "SELECT COUNT(CASE WHEN APPOINTMENT_STATUS != 'Cancelled' THEN 1 END) totalActiveAppointments, COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) cancelledAppointments, ROUND((COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) / COUNT(*)) * 100, 2) AS cancellationRate FROM APPOINTMENT WHERE DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
+        const [bookingTrendsResult] = await connection.execute(sql4, [dateFrom, dateTo]);
+
+        if (bookingTrendsResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Booking Trends Found',
+                data: null,
+            }
+        }
+
+        const dateRange = `${moment(dateFrom).format('DD/MM/YYYY')} - ${moment(dateTo).format('DD/MM/YYYY')}`;
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetch Revenue Report Data',
+            data: {
+                revenueReport: {
+                    totalRevenue,
+                    dateRange,
+                    services: serviceRevenueResult,
+                    timeSlot: timeSlotsResult,
+                    bookingTrends: bookingTrendsResult,
+                }
+            }
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
 }
 
 module.exports = { fetchAllSpecialists, generateSelectedReport, };
