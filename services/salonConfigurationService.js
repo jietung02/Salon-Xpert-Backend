@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { connection } = require('../config/dbConnection');
 const { userRegistration } = require('../services/authService');
 const { createNewCalendar } = require('../services/calendarService');

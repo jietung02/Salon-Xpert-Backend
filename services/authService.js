@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { connection } = require('../config/dbConnection');
 const { adminPermissions } = require('../utils/adminPermissions');
 const { guestPermissions } = require('../utils/guestPermissions');
