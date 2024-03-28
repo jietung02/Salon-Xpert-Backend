@@ -2,7 +2,7 @@ const { connection } = require('../config/dbConnection');
 
 const fetchAllRoles = async () => {
     try {
-        const sql = "SELECT ROLE_CODE AS roleCode, ROLE_NAME AS roleName, ROLE_DESCRIPTION AS roleDescription, ROLE_IS_SERVICE_PROVIDER AS roleIsServiceProvider FROM ROLE ORDER BY roleName";
+        const sql = "SELECT ROLE_CODE AS roleCode, ROLE_NAME AS roleName, ROLE_DESCRIPTION AS roleDescription, ROLE_IS_SERVICE_PROVIDER AS roleIsServiceProvider FROM role ORDER BY roleName";
 
         const [rolesResult] = await connection.execute(sql);
 
@@ -34,7 +34,7 @@ const fetchAllRoles = async () => {
 const createNewRole = async (roleDetails) => {
     try {
         const { roleCode, roleName, roleDescription, roleIsServiceProvider } = roleDetails;
-        const sql = "INSERT INTO ROLE (ROLE_CODE, ROLE_NAME, ROLE_DESCRIPTION, ROLE_IS_SERVICE_PROVIDER) VALUES (?, ?, ?, ?)";
+        const sql = "INSERT INTO role (ROLE_CODE, ROLE_NAME, ROLE_DESCRIPTION, ROLE_IS_SERVICE_PROVIDER) VALUES (?, ?, ?, ?)";
 
         const [newRoleResult] = await connection.execute(sql, [roleCode, roleName, roleDescription, roleIsServiceProvider]);
         const rowAffected = newRoleResult.affectedRows;
@@ -56,7 +56,7 @@ const createNewRole = async (roleDetails) => {
 const editExistingRole = async (roleDetails) => {
     try {
         const { roleCode, roleName, roleDescription, roleIsServiceProvider } = roleDetails;
-        const sql = "UPDATE ROLE SET ROLE_NAME = ?, ROLE_DESCRIPTION = ? WHERE ROLE_CODE = ?";
+        const sql = "UPDATE role SET ROLE_NAME = ?, ROLE_DESCRIPTION = ? WHERE ROLE_CODE = ?";
 
         const [editRoleResult] = await connection.execute(sql, [roleName, roleDescription, roleCode]);
         const rowAffected = editRoleResult.affectedRows;
@@ -77,7 +77,7 @@ const editExistingRole = async (roleDetails) => {
 
 const deleteExistingRole = async (roleCode) => {
     try {
-        const sql = "DELETE FROM ROLE WHERE ROLE_CODE = ?";
+        const sql = "DELETE FROM role WHERE ROLE_CODE = ?";
 
         const [deleteRoleResult] = await connection.execute(sql, [roleCode]);
         const rowAffected = deleteRoleResult.affectedRows;
@@ -98,7 +98,7 @@ const deleteExistingRole = async (roleCode) => {
 
 const fetchAllRolesObj = async () => {
     try {
-        const sql = "SELECT ROLE_CODE AS roleCode, ROLE_NAME AS roleName FROM ROLE ORDER BY roleName";
+        const sql = "SELECT ROLE_CODE AS roleCode, ROLE_NAME AS roleName FROM role ORDER BY roleName";
 
         const [rolesResult] = await connection.execute(sql);
 
@@ -123,7 +123,7 @@ const fetchAllRolesObj = async () => {
 
 const fetchAllPermissionCategories = async () => {
     try {
-        const sql = "SELECT DISTINCT(PERMISSION_CATEGORY) AS category, PERMISSION_CATEGORY_ORDER AS sequence FROM PERMISSION WHERE PERMISSION_CATEGORY != 'Customer' ORDER BY PERMISSION_CATEGORY_ORDER;";
+        const sql = "SELECT DISTINCT(PERMISSION_CATEGORY) AS category, PERMISSION_CATEGORY_ORDER AS sequence FROM permission WHERE PERMISSION_CATEGORY != 'Customer' ORDER BY PERMISSION_CATEGORY_ORDER;";
 
         const [permissionCategoriesResult] = await connection.execute(sql);
 
@@ -148,7 +148,7 @@ const fetchAllPermissionCategories = async () => {
 
 const fetchAllRolePermissions = async (roleCode) => {
     try {
-        const sql = "SELECT rp.ROLE_CODE AS roleCode, GROUP_CONCAT(DISTINCT(p.PERMISSION_CATEGORY)) AS permissionCategories FROM ROLEPERMISSION rp INNER JOIN PERMISSION p ON rp.PERMISSION_CODE = p.PERMISSION_CODE WHERE ROLE_CODE = ? GROUP BY rp.ROLE_CODE";
+        const sql = "SELECT rp.ROLE_CODE AS roleCode, GROUP_CONCAT(DISTINCT(p.PERMISSION_CATEGORY)) AS permissionCategories FROM rolepermission rp INNER JOIN permission p ON rp.PERMISSION_CODE = p.PERMISSION_CODE WHERE ROLE_CODE = ? GROUP BY rp.ROLE_CODE";
 
         const [rolePermissionsResult] = await connection.execute(sql, [roleCode]);
 
@@ -187,7 +187,7 @@ const saveNewRoleAccess = async (rolePermissions) => {
         await connection.query('START TRANSACTION');
 
         //Delete All RolePermission for that Role First
-        const sql = "DELETE FROM ROLEPERMISSION WHERE ROLE_CODE = ?";
+        const sql = "DELETE FROM rolepermission WHERE ROLE_CODE = ?";
 
         const [deleteRolePermissionsResult] = await connection.execute(sql, [roleCode]);
 
@@ -195,7 +195,7 @@ const saveNewRoleAccess = async (rolePermissions) => {
 
         //Get All the PERMISSION_CODE Based on the Selected Permission Categories
         const placeholders = permissions.map(() => '?').join(', ');
-        const sql2 = `SELECT PERMISSION_CODE AS permissionCode FROM PERMISSION WHERE PERMISSION_CATEGORY IN (${placeholders})`;
+        const sql2 = `SELECT PERMISSION_CODE AS permissionCode FROM permission WHERE PERMISSION_CATEGORY IN (${placeholders})`;
         const [permissionCodesResult] = await connection.execute(sql2, permissions);
 
         if (permissionCodesResult.length === 0) {
@@ -205,7 +205,7 @@ const saveNewRoleAccess = async (rolePermissions) => {
         for (const codes of permissionCodesResult) {
             const { permissionCode } = codes;
 
-            const sql3 = "INSERT INTO ROLEPERMISSION (ROLE_CODE, PERMISSION_CODE) VALUES (?, ?)";
+            const sql3 = "INSERT INTO rolepermission (ROLE_CODE, PERMISSION_CODE) VALUES (?, ?)";
             const [insertRolePermissionResult] = await connection.execute(sql3, [roleCode, permissionCode]);
 
             const rowAffected2 = insertRolePermissionResult.affectedRows;

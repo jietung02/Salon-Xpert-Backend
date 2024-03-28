@@ -2,7 +2,7 @@ const { connection } = require('../config/dbConnection');
 
 const fetchAllStaffCalendarIds = async () => {
     try {
-        const sql = "SELECT s.STAFF_CALENDAR_ID as calendarId FROM STAFF s INNER JOIN ROLE r ON s.ROLE_CODE = r.ROLE_CODE WHERE r.ROLE_IS_SERVICE_PROVIDER = 1";
+        const sql = "SELECT s.STAFF_CALENDAR_ID as calendarId FROM staff s INNER JOIN role r ON s.ROLE_CODE = r.ROLE_CODE WHERE r.ROLE_IS_SERVICE_PROVIDER = 1";
 
         const [calIdsResult] = await connection.execute(sql);
 

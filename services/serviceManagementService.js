@@ -2,7 +2,7 @@ const { connection } = require('../config/dbConnection');
 
 const fetchStaffCalendarId = async (staffId) => {
     try {
-        const sql = "SELECT STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
+        const sql = "SELECT STAFF_CALENDAR_ID AS calendarId FROM staff WHERE STAFF_ID = ?";
 
         const [calIdResult] = await connection.execute(sql, [staffId]);
 
@@ -30,7 +30,7 @@ const fetchStaffCalendarId = async (staffId) => {
 
 const fetchAllTodayAppointments = async () => {
     try {
-        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, a.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, COALESCE(a.CUSTOMER_ID, a.GUEST_ID) AS custOrGuestId, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, a.APPOINTMENT_ESTIMATED_PRICE AS estimatedPrice, CASE WHEN a.CUSTOMER_ID IS NOT NULL THEN 'customer' ELSE 'guest' END AS appointmentType FROM APPOINTMENT a INNER JOIN STAFF s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN CUSTOMER c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN GUEST g ON a.GUEST_ID = g.GUEST_ID WHERE DATE(APPOINTMENT_END_DATE_TIME) = CURDATE() && a.APPOINTMENT_STATUS = 'Scheduled'";
+        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, a.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, COALESCE(a.CUSTOMER_ID, a.GUEST_ID) AS custOrGuestId, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, a.APPOINTMENT_ESTIMATED_PRICE AS estimatedPrice, CASE WHEN a.CUSTOMER_ID IS NOT NULL THEN 'customer' ELSE 'guest' END AS appointmentType FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN guest g ON a.GUEST_ID = g.GUEST_ID WHERE DATE(APPOINTMENT_END_DATE_TIME) = CURDATE() && a.APPOINTMENT_STATUS = 'Scheduled'";
 
         const [appointmentsResult] = await connection.execute(sql);
 
@@ -60,7 +60,7 @@ const updateLastServicePrice = async (selectedAppointment) => {
         const paymentPageLink = `${process.env.CLIENT_URI}/${appointmentType === 'customer' ? 'customer': 'guest'}/payment/${appointmentId}`;
 
         //UPDATE FINAL SERVICE PRICE
-        const sql = "UPDATE APPOINTMENT SET APPOINTMENT_FINAL_PRICE = ?, APPOINTMENT_PAYMENT_LINK = ?, APPOINTMENT_STATUS = 'PendingFinalPayment' WHERE APPOINTMENT_ID = ?;";
+        const sql = "UPDATE appointment SET APPOINTMENT_FINAL_PRICE = ?, APPOINTMENT_PAYMENT_LINK = ?, APPOINTMENT_STATUS = 'PendingFinalPayment' WHERE APPOINTMENT_ID = ?;";
         const [finalPriceResult] = await connection.execute(sql, [serviceFinalPrice, paymentPageLink, appointmentId]);
 
         const rowAffectedPrice = finalPriceResult.affectedRows;

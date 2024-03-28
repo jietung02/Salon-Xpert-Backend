@@ -4,7 +4,7 @@ const moment = require('moment');
 const fetchAllSpecialists = async () => {
     try {
 
-        const sql = "SELECT s.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName FROM STAFF s INNER JOIN ROLE r ON s.ROLE_CODE = r.ROLE_CODE WHERE r.ROLE_IS_SERVICE_PROVIDER = 1;";
+        const sql = "SELECT s.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName FROM staff s INNER JOIN role r ON s.ROLE_CODE = r.ROLE_CODE WHERE r.ROLE_IS_SERVICE_PROVIDER = 1;";
 
         const [specialistsResult] = await connection.execute(sql);
 
@@ -54,7 +54,7 @@ const generateSelectedReport = async (reportDetails) => {
 
 const generateStaffPerformanceReport = async (selectedSpecialist) => {
     try {
-        const sql = "SELECT s.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, GROUP_CONCAT(svc.SERVICE_NAME) AS totalServices, (SELECT SUM(a2.APPOINTMENT_FINAL_PRICE) FROM APPOINTMENT a2 WHERE a2.STAFF_ID = s.STAFF_ID && a2.APPOINTMENT_STATUS = 'Completed' GROUP BY a2.STAFF_ID) AS totalSalesGenerated, AVG(ssf.SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING) AS averageClientSatisfactionRatings FROM STAFF s INNER JOIN APPOINTMENT a ON s.STAFF_ID = a.STAFF_ID INNER JOIN APPOINTMENTSERVICE apt ON a.APPOINTMENT_ID = apt.APPOINTMENT_ID INNER JOIN SERVICE svc ON apt.SERVICE_CODE = svc.SERVICE_CODE LEFT JOIN SERVICESPECIFICFEEDBACK ssf ON a.APPOINTMENT_ID = ssf.APPOINTMENT_ID  WHERE s.STAFF_ID = ? && a.APPOINTMENT_STATUS = 'Completed' GROUP BY s.STAFF_ID";
+        const sql = "SELECT s.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, GROUP_CONCAT(svc.SERVICE_NAME) AS totalServices, (SELECT SUM(a2.APPOINTMENT_FINAL_PRICE) FROM appointment a2 WHERE a2.STAFF_ID = s.STAFF_ID && a2.APPOINTMENT_STATUS = 'Completed' GROUP BY a2.STAFF_ID) AS totalSalesGenerated, AVG(ssf.SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING) AS averageClientSatisfactionRatings FROM staff s INNER JOIN appointment a ON s.STAFF_ID = a.STAFF_ID INNER JOIN appointmentservice apt ON a.APPOINTMENT_ID = apt.APPOINTMENT_ID INNER JOIN service svc ON apt.SERVICE_CODE = svc.SERVICE_CODE LEFT JOIN servicespecificfeedback ssf ON a.APPOINTMENT_ID = ssf.APPOINTMENT_ID  WHERE s.STAFF_ID = ? && a.APPOINTMENT_STATUS = 'Completed' GROUP BY s.STAFF_ID";
 
         const [performanceResult] = await connection.execute(sql, [selectedSpecialist]);
         console.log(performanceResult)
@@ -99,7 +99,7 @@ const generateStaffPerformanceReport = async (selectedSpecialist) => {
 
 const generateFeedbackReport = async (dateFrom, dateTo) => {
     try {
-        const sql = "SELECT AVG(SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING) AS averageOverallServiceRatings, AVG(SERVICESPECIFICFEEDBACK_CLEANINESS_RATING) AS averageCleanlinessRatings, AVG(SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING) AS averageServiceSatisfactionRatings, AVG(SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) AS averageCommunicationRatings FROM SERVICESPECIFICFEEDBACK WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ?";
+        const sql = "SELECT AVG(SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING) AS averageOverallServiceRatings, AVG(SERVICESPECIFICFEEDBACK_CLEANINESS_RATING) AS averageCleanlinessRatings, AVG(SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING) AS averageServiceSatisfactionRatings, AVG(SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) AS averageCommunicationRatings FROM servicespecificfeedback WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ?";
 
         const [feedbackResult] = await connection.execute(sql, [dateFrom, dateTo]);
 
@@ -113,7 +113,7 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
         const [feedback] = feedbackResult;
 
         //FETCH GROUP CATEGORY COMMENTS
-        const sql2 = "SELECT SERVICESPECIFICFEEDBACK_CATEGORY AS category, GROUP_CONCAT(SERVICESPECIFICFEEDBACK_COMMENTS) AS comments FROM SERVICESPECIFICFEEDBACK WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ? GROUP BY SERVICESPECIFICFEEDBACK_CATEGORY";
+        const sql2 = "SELECT SERVICESPECIFICFEEDBACK_CATEGORY AS category, GROUP_CONCAT(SERVICESPECIFICFEEDBACK_COMMENTS) AS comments FROM servicespecificfeedback WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ? GROUP BY SERVICESPECIFICFEEDBACK_CATEGORY";
         const [commentsResult] = await connection.execute(sql2, [dateFrom, dateTo]);
 
         if (commentsResult.length === 0) {
@@ -164,7 +164,7 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
 const generateRevenueReport = async (dateFrom, dateTo) => {
     try {
 
-        const sql = "SELECT SUM(APPOINTMENT_FINAL_PRICE) AS totalRevenue FROM APPOINTMENT WHERE APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
+        const sql = "SELECT SUM(APPOINTMENT_FINAL_PRICE) AS totalRevenue FROM appointment WHERE APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
 
         const [totalRevenueResult] = await connection.execute(sql, [dateFrom, dateTo]);
 
@@ -180,7 +180,7 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
 
 
         //FETCH EACH SERVICE COUNT AND TOTAL REVENUE GENERATED (BASED PRICE)
-        const sql2 = "SELECT s.SERVICE_NAME AS serviceName, COUNT(*) AS serviceCounts, (COUNT(*) * SERVICE_BASED_PRICE) AS totalGeneratedSales FROM APPOINTMENT a INNER JOIN APPOINTMENTSERVICE asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN SERVICE s ON asvc.SERVICE_CODE = s.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? GROUP BY s.SERVICE_NAME";
+        const sql2 = "SELECT s.SERVICE_NAME AS serviceName, COUNT(*) AS serviceCounts, (COUNT(*) * SERVICE_BASED_PRICE) AS totalGeneratedSales FROM appointment a INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service s ON asvc.SERVICE_CODE = s.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? GROUP BY s.SERVICE_NAME";
         const [serviceRevenueResult] = await connection.execute(sql2, [dateFrom, dateTo]);
 
         if (serviceRevenueResult.length === 0) {
@@ -192,7 +192,7 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
         }   
 
         //GET TIMESLOT REVENUE DISTRIBUTION
-        const sql3 = "SELECT timeSlotTable.timeSlot, COALESCE(SUM(CASE WHEN APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? THEN APPOINTMENT_FINAL_PRICE ELSE 0 END), 0) AS revenue FROM (SELECT 'Morning' AS timeSlot UNION ALL SELECT 'Afternoon' UNION ALL SELECT 'Evening') AS timeSlotTable LEFT JOIN APPOINTMENT ON CASE WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 6 AND 11 THEN 'Morning' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 12 AND 17 THEN 'Afternoon' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 18 AND 23 THEN 'Evening' END = timeSlotTable.timeSlot GROUP BY timeSlotTable.timeSlot";
+        const sql3 = "SELECT timeSlotTable.timeSlot, COALESCE(SUM(CASE WHEN APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? THEN APPOINTMENT_FINAL_PRICE ELSE 0 END), 0) AS revenue FROM (SELECT 'Morning' AS timeSlot UNION ALL SELECT 'Afternoon' UNION ALL SELECT 'Evening') AS timeSlotTable LEFT JOIN appointment ON CASE WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 6 AND 11 THEN 'Morning' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 12 AND 17 THEN 'Afternoon' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 18 AND 23 THEN 'Evening' END = timeSlotTable.timeSlot GROUP BY timeSlotTable.timeSlot";
 
         const [timeSlotsResult] = await connection.execute(sql3, [dateFrom, dateTo]);
         
@@ -206,7 +206,7 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
         }
 
         //FETCH BOOKING TRENDS
-        const sql4 = "SELECT COUNT(CASE WHEN APPOINTMENT_STATUS != 'Cancelled' THEN 1 END) totalActiveAppointments, COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) cancelledAppointments, ROUND((COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) / COUNT(*)) * 100, 2) AS cancellationRate FROM APPOINTMENT WHERE DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
+        const sql4 = "SELECT COUNT(CASE WHEN APPOINTMENT_STATUS != 'Cancelled' THEN 1 END) totalActiveAppointments, COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) cancelledAppointments, ROUND((COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) / COUNT(*)) * 100, 2) AS cancellationRate FROM appointment WHERE DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
         const [bookingTrendsResult] = await connection.execute(sql4, [dateFrom, dateTo]);
 
         if (bookingTrendsResult.length === 0) {

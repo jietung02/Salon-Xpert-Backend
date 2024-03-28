@@ -7,7 +7,7 @@ const moment = require('moment');
 
 const getAllServices = async () => {
     try {
-        const sql = "SELECT * FROM SERVICE";
+        const sql = "SELECT * FROM service";
 
         const [serviceResult] = await connection.execute(sql);
 
@@ -26,15 +26,9 @@ const getAllServices = async () => {
 
 const getMatchSpecialists = async (selectedServices) => {
     try {
-        //         SELECT s.STAFF_ID, s.STAFF_FULL_NAME
-        // FROM STAFF s
-        // JOIN STAFFSPECIALTY ss ON s.STAFF_ID = ss.STAFF_ID
-        // WHERE ss.SERVICE_CODE IN ('BEARD_GROOM', 'HAIR_COLOR')
-        // GROUP BY s.STAFF_ID, s.STAFF_FULL_NAME
-        // HAVING COUNT(DISTINCT ss.SERVICE_CODE) = 2;
         const placeholders = selectedServices.map(() => '?').join(', ');
 
-        const sql = `SELECT s.STAFF_ID, s.STAFF_FULL_NAME FROM STAFF s JOIN STAFFSPECIALTY ss ON s.STAFF_ID = ss.STAFF_ID WHERE ss.SERVICE_CODE IN (${placeholders}) GROUP BY s.STAFF_ID, s.STAFF_FULL_NAME HAVING COUNT(DISTINCT ss.SERVICE_CODE) = ?`;
+        const sql = `SELECT s.STAFF_ID, s.STAFF_FULL_NAME FROM staff s JOIN staffspecialty ss ON s.STAFF_ID = ss.STAFF_ID WHERE ss.SERVICE_CODE IN (${placeholders}) GROUP BY s.STAFF_ID, s.STAFF_FULL_NAME HAVING COUNT(DISTINCT ss.SERVICE_CODE) = ?`;
 
         const params = [...selectedServices, selectedServices.length];
         const [specialistsResult] = await connection.execute(sql, params);
@@ -69,7 +63,7 @@ const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
         const { name, email, gender, age, contact, selectedServices, selectedSpecialist, selectedDate, selectedTime, from, username } = appointDetails;
 
         //GET PRICE OPTIONS WHERE IS SELECTED = 1
-        const sql = "SELECT PRICEOPTION_CODE AS priceOptionCode FROM PRICEOPTION WHERE PRICEOPTION_ACTIVE = 1";
+        const sql = "SELECT PRICEOPTION_CODE AS priceOptionCode FROM priceoption WHERE PRICEOPTION_ACTIVE = 1";
         const [priceOptionsResult] = await connection.execute(sql);
 
         if (priceOptionsResult.length === 0) {
@@ -81,7 +75,7 @@ const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
 
         const placeholders = priceOptionCodes.map(() => '?').join(', ');
         const placeholders2 = selectedServices.map(() => '?').join(', ');
-        const sql2 = `SELECT SERVICE_CODE AS serviceCode, PRICEOPTION_CODE AS priceOptionCode, PRICERULE_OPTION_VALUE AS priceOptionValue, PRICERULE_PRICE_ADJUSTMENT AS priceAdjustment FROM PRICERULE WHERE PRICEOPTION_CODE IN (${placeholders}) && SERVICE_CODE IN (${placeholders2})`;
+        const sql2 = `SELECT SERVICE_CODE AS serviceCode, PRICEOPTION_CODE AS priceOptionCode, PRICERULE_OPTION_VALUE AS priceOptionValue, PRICERULE_PRICE_ADJUSTMENT AS priceAdjustment FROM pricerule WHERE PRICEOPTION_CODE IN (${placeholders}) && SERVICE_CODE IN (${placeholders2})`;
         console.log(sql2)
         const params = [...priceOptionCodes, ...selectedServices];
         console.log(params)
@@ -130,7 +124,7 @@ const createNewAppointment = async (appointDetails) => {
 
 
         //GET STAFF NAME AND CALENDAR ID 
-        const sql = "SELECT STAFF_FULL_NAME AS staffName, STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
+        const sql = "SELECT STAFF_FULL_NAME AS staffName, STAFF_CALENDAR_ID AS calendarId FROM staff WHERE STAFF_ID = ?";
 
         const [staffNameCalendarIdResult] = await connection.execute(sql, [selectedSpecialist]);
         if (staffNameCalendarIdResult.length === 0) {
@@ -140,7 +134,7 @@ const createNewAppointment = async (appointDetails) => {
 
         //GET SUM SERVICE DURATION AND SERVICE BASED PRICE
         const placeholders = selectedServices.map(() => '?').join(', ');
-        const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration, SUM(SERVICE_BASED_PRICE) AS totalPrice FROM SERVICE WHERE SERVICE_CODE IN (${placeholders})`;
+        const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration, SUM(SERVICE_BASED_PRICE) AS totalPrice FROM service WHERE SERVICE_CODE IN (${placeholders})`;
 
         const [durationPriceResult] = await connection.execute(sql2, selectedServices);
 
@@ -151,7 +145,7 @@ const createNewAppointment = async (appointDetails) => {
         const [{ totalDuration, totalPrice }] = durationPriceResult;
         //GET SERVICES NAME
         const serviceplaceholders = selectedServices.map(() => '?').join(', ');
-        const sql3 = `SELECT SERVICE_NAME AS serviceName FROM SERVICE WHERE SERVICE_CODE IN (${serviceplaceholders})`;
+        const sql3 = `SELECT SERVICE_NAME AS serviceName FROM service WHERE SERVICE_CODE IN (${serviceplaceholders})`;
 
         const [servicesWithName] = await connection.execute(sql3, selectedServices);
 
@@ -207,7 +201,7 @@ const createNewAppointment = async (appointDetails) => {
         let id = null;
 
         if (username !== null && from === 'customer') {
-            const sql0 = "SELECT CUSTOMER_ID as custId FROM CUSTOMER INNER JOIN USER ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
+            const sql0 = "SELECT CUSTOMER_ID as custId FROM customer INNER JOIN user ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
             const [userIdResult] = await connection.execute(sql0, [username]);
 
             const [{ custId }] = userIdResult;
@@ -220,7 +214,7 @@ const createNewAppointment = async (appointDetails) => {
 
             let userId = null;
             //CHECK EMAIL EXIST IN USER TABLE
-            const sqlEmailExists = "SELECT COUNT(*) as isExists FROM USER WHERE USER_USERNAME = ?";
+            const sqlEmailExists = "SELECT COUNT(*) as isExists FROM user WHERE USER_USERNAME = ?";
             const [guestUserExists] = await connection.execute(sqlEmailExists, [email]);
             const [{ isExists }] = guestUserExists;
             console.log(isExists)
@@ -229,7 +223,7 @@ const createNewAppointment = async (appointDetails) => {
                 //INSERT INTO USER TABLE
 
                 const hashedPassword = await hashPassword(name);
-                const sqlInsertUser = "INSERT INTO USER (USER_USERNAME, USER_PASSWORD_HASH, USER_EMAIL, USER_ROLE) VALUES (?, ?, ?, ?)";
+                const sqlInsertUser = "INSERT INTO user (USER_USERNAME, USER_PASSWORD_HASH, USER_EMAIL, USER_ROLE) VALUES (?, ?, ?, ?)";
                 const [guestUserInsertResult] = await connection.execute(sqlInsertUser, [email, hashedPassword, email, 'guest']);
                 const rowAffectedGuestUser = guestUserInsertResult.affectedRows;
 
@@ -238,14 +232,14 @@ const createNewAppointment = async (appointDetails) => {
                 }
                 userId = guestUserInsertResult.insertId;
             } else {
-                const sqlUserId = "SELECT USER_ID as userId FROM USER WHERE USER_USERNAME = ?";
+                const sqlUserId = "SELECT USER_ID as userId FROM user WHERE USER_USERNAME = ?";
                 const [guestUserIdResult] = await connection.execute(sqlUserId, [email]);
                 [{ userId }] = guestUserIdResult;
                 userId = userId;
                 console.log(userId)
             }
 
-            const sqlInsertGuest = "INSERT INTO GUEST (USER_ID, GUEST_FULL_NAME, GUEST_GENDER, GUEST_AGE, GUEST_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
+            const sqlInsertGuest = "INSERT INTO guest (USER_ID, GUEST_FULL_NAME, GUEST_GENDER, GUEST_AGE, GUEST_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
             const [guestInsertResult] = await connection.execute(sqlInsertGuest, [userId, name, gender, age, contact]);
             const rowAffectedGuest = guestInsertResult.affectedRows;
 
@@ -258,10 +252,10 @@ const createNewAppointment = async (appointDetails) => {
 
 
         if (from === 'customer') {
-            sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, CUSTOMER_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            sql4 = "INSERT INTO appointment (APPOINTMENT_ID, CUSTOMER_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
         }
         else if (from === 'guest') {
-            sql4 = "INSERT INTO APPOINTMENT (APPOINTMENT_ID, GUEST_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            sql4 = "INSERT INTO appointment (APPOINTMENT_ID, GUEST_ID, STAFF_ID, APPOINTMENT_START_DATE_TIME, APPOINTMENT_END_DATE_TIME, APPOINTMENT_CREATED_DATE, APPOINTMENT_DEPOSIT_AMOUNT, APPOINTMENT_ESTIMATED_PRICE, APPOINTMENT_STATUS) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         }
 
@@ -279,7 +273,7 @@ const createNewAppointment = async (appointDetails) => {
 
         //UPDATE TO APPOINTMENTSERVICE
         for (const serviceCode of appointDetails.selectedServices) {
-            const sql5 = "INSERT INTO APPOINTMENTSERVICE (APPOINTMENT_ID, SERVICE_CODE) VALUES (?, ?)";
+            const sql5 = "INSERT INTO appointmentservice (APPOINTMENT_ID, SERVICE_CODE) VALUES (?, ?)";
 
             const [appointmentServiceResult] = await connection.execute(sql5, [appointmentId, serviceCode]);
             const rowAffected2 = appointmentServiceResult.affectedRows;
@@ -319,7 +313,7 @@ const handleDeposit = async (summaryDetails) => {
         //ASSUME DEPOSIT HAS BEEN PAID
 
         //FETCH APPOINTMENT DETAILS
-        const sql = "SELECT A.STAFF_ID AS selectedSpecialist, ASer.SERVICE_CODE AS selectedService, A.APPOINTMENT_START_DATE_TIME AS selectedTime FROM APPOINTMENT A INNER JOIN APPOINTMENTSERVICE AS ASer ON A.APPOINTMENT_ID = ASer.APPOINTMENT_ID WHERE A.APPOINTMENT_ID = ?"
+        const sql = "SELECT A.STAFF_ID AS selectedSpecialist, ASer.SERVICE_CODE AS selectedService, A.APPOINTMENT_START_DATE_TIME AS selectedTime FROM appointment A INNER JOIN appointmentservice AS ASer ON A.APPOINTMENT_ID = ASer.APPOINTMENT_ID WHERE A.APPOINTMENT_ID = ?"
         const [result] = await connection.execute(sql, [summaryDetails.appointmentId]);
 
         if (result.length === 0) {
@@ -351,7 +345,7 @@ const handleDeposit = async (summaryDetails) => {
         }
 
         //GET STAFF CALENDAR ID
-        const sql2 = "SELECT STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
+        const sql2 = "SELECT STAFF_CALENDAR_ID AS calendarId FROM staff WHERE STAFF_ID = ?";
 
         const [calendarIdResult] = await connection.execute(sql2, [appointmentDetailsWithDateOnly.selectedSpecialist]);
 
@@ -415,7 +409,7 @@ const handleDeposit = async (summaryDetails) => {
 const updateAppointmentStatusToScheduled = async (appointmentId) => {
     try {
         console.log(appointmentId)
-        const sql = "UPDATE APPOINTMENT SET APPOINTMENT_STATUS = 'Scheduled' WHERE APPOINTMENT_ID = ?";
+        const sql = "UPDATE appointment SET APPOINTMENT_STATUS = 'Scheduled' WHERE APPOINTMENT_ID = ?";
 
         const [result] = await connection.execute(sql, [appointmentId]);
         const rowAffected = result.affectedRows;
@@ -444,7 +438,7 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
         const { selectedServices, selectedSpecialist, selectedDate } = queryData;
 
         //GET STAFF CALENDAR ID
-        const sql = "SELECT STAFF_CALENDAR_ID AS calendarId FROM STAFF WHERE STAFF_ID = ?";
+        const sql = "SELECT STAFF_CALENDAR_ID AS calendarId FROM staff WHERE STAFF_ID = ?";
 
         const [calendarIdResult] = await connection.execute(sql, [selectedSpecialist]);
 
@@ -455,7 +449,7 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
 
         //GET TOTAL SERVICE DURATION
         const placeholders = selectedServices.map(() => '?').join(', ');
-        const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration FROM SERVICE WHERE SERVICE_CODE IN (${placeholders})`;
+        const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration FROM service WHERE SERVICE_CODE IN (${placeholders})`;
 
         const [durationResult] = await connection.execute(sql2, selectedServices);
 
@@ -665,7 +659,7 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
 
 const appointmentCancellation = async (appointmentId) => {
     try {
-        const sql = "UPDATE APPOINTMENT SET APPOINTMENT_STATUS = 'Cancelled' WHERE APPOINTMENT_ID = ?";
+        const sql = "UPDATE appointment SET APPOINTMENT_STATUS = 'Cancelled' WHERE APPOINTMENT_ID = ?";
 
         const [result] = await connection.execute(sql, [appointmentId]);
         const rowAffected = result.affectedRows;
@@ -695,12 +689,12 @@ const fetchAppointmentHistorySSFeedback = async (details) => {
         let sql = null;
 
         if (role === 'customer') {
-            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE CUSTOMER_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM appointment WHERE CUSTOMER_ID = ? AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
         }
 
         //The ID from Guest is the User ID Not Guest ID
         else if (role === 'guest') {
-            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM APPOINTMENT WHERE GUEST_ID IN (SELECT GUEST_ID FROM GUEST WHERE USER_ID = ?) AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
+            sql = "SELECT APPOINTMENT_ID AS appointmentId, APPOINTMENT_END_DATE_TIME AS appointmentDate FROM appointment WHERE GUEST_ID IN (SELECT GUEST_ID FROM guest WHERE USER_ID = ?) AND APPOINTMENT_FEEDBACK_RECEIVED = 0 AND APPOINTMENT_STATUS = 'Completed'";
         }
 
         const [result] = await connection.execute(sql, [id]);
@@ -754,7 +748,7 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
         await connection.query('START TRANSACTION');
 
         //INSERT INTO SERVICESPECIFICFEEDBACK TABLE
-        const sql = "INSERT INTO SERVICESPECIFICFEEDBACK (APPOINTMENT_ID, SERVICESPECIFICFEEDBACK_CATEGORY, SERVICESPECIFICFEEDBACK_COMMENTS, SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING,SERVICESPECIFICFEEDBACK_CLEANINESS_RATING, SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING, SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) VALUES (?,?,?,?,?,?,?)";
+        const sql = "INSERT INTO servicespecificfeedback (APPOINTMENT_ID, SERVICESPECIFICFEEDBACK_CATEGORY, SERVICESPECIFICFEEDBACK_COMMENTS, SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING,SERVICESPECIFICFEEDBACK_CLEANINESS_RATING, SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING, SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) VALUES (?,?,?,?,?,?,?)";
 
         const [newServiceSpecificFeedbackResult] = await connection.execute(sql, [appointmentId, category, feedbackComments, overallServiceRating, cleaninessRating, serviceSatisfactionRating, communicationRating]);
 
@@ -765,7 +759,7 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
         }
 
         //CHANGE APPOINTMENT FEEDBACK_RECEIVED TO TRUE (1)
-        const sql2 = "UPDATE APPOINTMENT SET APPOINTMENT_FEEDBACK_RECEIVED = 1 WHERE APPOINTMENT_ID = ?";
+        const sql2 = "UPDATE appointment SET APPOINTMENT_FEEDBACK_RECEIVED = 1 WHERE APPOINTMENT_ID = ?";
         const [feedbackReceivedResult] = await connection.execute(sql2, [appointmentId]);
 
         const rowAffectedUpdateAppointment = feedbackReceivedResult.affectedRows;
@@ -787,7 +781,7 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
 
 const fetchOwnProfileDetails = async (customerId) => {
     try {
-        const sql = "SELECT u.USER_USERNAME AS username, c.CUSTOMER_FULL_NAME AS name, u.USER_EMAIL AS email, c.CUSTOMER_CONTACT_NUMBER AS contact, c.CUSTOMER_GENDER AS gender, c.CUSTOMER_BIRTHDATE AS birthdate FROM CUSTOMER c INNER JOIN USER u ON c.USER_ID = u.USER_ID WHERE CUSTOMER_ID = ?";
+        const sql = "SELECT u.USER_USERNAME AS username, c.CUSTOMER_FULL_NAME AS name, u.USER_EMAIL AS email, c.CUSTOMER_CONTACT_NUMBER AS contact, c.CUSTOMER_GENDER AS gender, c.CUSTOMER_BIRTHDATE AS birthdate FROM customer c INNER JOIN user u ON c.USER_ID = u.USER_ID WHERE CUSTOMER_ID = ?";
 
         const [profileDetailsResult] = await connection.execute(sql, [customerId]);
 
@@ -833,7 +827,7 @@ const updateNewProfileDetails = async (customerId, profileDetails) => {
         await connection.query('START TRANSACTION');
 
         //UPDATE CUSTOMER TABLE
-        const sql = "UPDATE CUSTOMER SET CUSTOMER_FULL_NAME = ?, CUSTOMER_BIRTHDATE = ?, CUSTOMER_CONTACT_NUMBER = ? WHERE CUSTOMER_ID = ?";
+        const sql = "UPDATE customer SET CUSTOMER_FULL_NAME = ?, CUSTOMER_BIRTHDATE = ?, CUSTOMER_CONTACT_NUMBER = ? WHERE CUSTOMER_ID = ?";
 
         const [updateCustomerResult] = await connection.execute(sql, [name, birthdate, contact, customerId]);
         const rowAffectedCustomer = updateCustomerResult.affectedRows;
@@ -848,11 +842,11 @@ const updateNewProfileDetails = async (customerId, profileDetails) => {
         let sql2 = null;
         let params = [];
         if (password !== null && hashedPassword !== null) {
-            sql2 = "UPDATE USER SET USER_PASSWORD_HASH = ?, USER_EMAIL = ? WHERE USER_USERNAME = ?";
+            sql2 = "UPDATE user SET USER_PASSWORD_HASH = ?, USER_EMAIL = ? WHERE USER_USERNAME = ?";
             params = [hashedPassword, email, username];
         }
         else {
-            sql2 = "UPDATE USER SET USER_EMAIL = ? WHERE USER_USERNAME = ?";
+            sql2 = "UPDATE user SET USER_EMAIL = ? WHERE USER_USERNAME = ?";
             params = [email, username];
         }
 
@@ -879,7 +873,7 @@ const updateNewProfileDetails = async (customerId, profileDetails) => {
 
 const fetchAppointmentDetails = async (appointmentId) => {
     try {
-        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, s.STAFF_FULL_NAME as staffName, a.APPOINTMENT_FINAL_PRICE AS finalPrice, a.APPOINTMENT_END_DATE_TIME AS appointmentDateTime, a.APPOINTMENT_DEPOSIT_AMOUNT AS depositPaid, a.APPOINTMENT_FINAL_PRICE - a.APPOINTMENT_DEPOSIT_AMOUNT AS remainingAmount FROM APPOINTMENT a INNER JOIN APPOINTMENTSERVICE asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN SERVICE svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE INNER JOIN STAFF s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN CUSTOMER c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN GUEST g ON a.GUEST_ID = g.GUEST_ID INNER JOIN USER u ON (a.CUSTOMER_ID IS NOT NULL AND u.USER_ID = c.USER_ID) OR (a.GUEST_ID IS NOT NULL AND u.USER_ID = g.USER_ID) WHERE a.APPOINTMENT_STATUS = 'PendingFinalPayment' && a.APPOINTMENT_ID = ? GROUP BY a.APPOINTMENT_ID";
+        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, s.STAFF_FULL_NAME as staffName, a.APPOINTMENT_FINAL_PRICE AS finalPrice, a.APPOINTMENT_END_DATE_TIME AS appointmentDateTime, a.APPOINTMENT_DEPOSIT_AMOUNT AS depositPaid, a.APPOINTMENT_FINAL_PRICE - a.APPOINTMENT_DEPOSIT_AMOUNT AS remainingAmount FROM appointment a INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN guest g ON a.GUEST_ID = g.GUEST_ID INNER JOIN user u ON (a.CUSTOMER_ID IS NOT NULL AND u.USER_ID = c.USER_ID) OR (a.GUEST_ID IS NOT NULL AND u.USER_ID = g.USER_ID) WHERE a.APPOINTMENT_STATUS = 'PendingFinalPayment' && a.APPOINTMENT_ID = ? GROUP BY a.APPOINTMENT_ID";
 
 
         const [appointmentDetailsResult] = await connection.execute(sql, [appointmentId]);
@@ -905,7 +899,7 @@ const fetchAppointmentDetails = async (appointmentId) => {
 
 const makeFinalPayment = async (appointmentId) => {
     try {
-        const sql = "UPDATE APPOINTMENT SET APPOINTMENT_STATUS = 'Completed' WHERE APPOINTMENT_ID = ?";
+        const sql = "UPDATE appointment SET APPOINTMENT_STATUS = 'Completed' WHERE APPOINTMENT_ID = ?";
 
 
         const [completedAppointmentResult] = await connection.execute(sql, [appointmentId]);

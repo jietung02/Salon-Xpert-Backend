@@ -97,7 +97,7 @@ const getUserData = async (userId, role) => {
     try {
         //ID for Customer is Customer ID
         if (role === 'customer') {
-            const sql = "SELECT CUSTOMER_ID AS id, CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM CUSTOMER AS c INNER JOIN USER AS u ON c.USER_ID = u.USER_ID WHERE c.USER_ID = ?";
+            const sql = "SELECT CUSTOMER_ID AS id, CUSTOMER_FULL_NAME AS name, USER_EMAIL AS email, CUSTOMER_GENDER AS gender, TIMESTAMPDIFF(YEAR, CUSTOMER_BIRTHDATE, CURDATE()) AS age, CUSTOMER_CONTACT_NUMBER AS contact FROM customer AS c INNER JOIN user AS u ON c.USER_ID = u.USER_ID WHERE c.USER_ID = ?";
             const [userDataResults] = await connection.execute(sql, [userId]);
 
             if (userDataResults.length === 0) {
@@ -111,7 +111,7 @@ const getUserData = async (userId, role) => {
 
         //ID for Guest is User ID (Since in the guest table they will have repeated data, therefore cannot fetch Appointment for feedback as 1 appointment ID for 1 guest ID)
         else if (role === 'guest') {
-            const sql = "SELECT u.USER_ID AS id, g.GUEST_FULL_NAME AS name, u.USER_EMAIL AS email, g.GUEST_GENDER AS gender, g.GUEST_AGE AS age, g.GUEST_CONTACT_NUMBER AS contact FROM GUEST g INNER JOIN USER u ON g.USER_ID = u.USER_ID WHERE u.USER_ID = ? ORDER BY g.GUEST_ID DESC LIMIT 1";
+            const sql = "SELECT u.USER_ID AS id, g.GUEST_FULL_NAME AS name, u.USER_EMAIL AS email, g.GUEST_GENDER AS gender, g.GUEST_AGE AS age, g.GUEST_CONTACT_NUMBER AS contact FROM guest g INNER JOIN user u ON g.USER_ID = u.USER_ID WHERE u.USER_ID = ? ORDER BY g.GUEST_ID DESC LIMIT 1";
             const [userDataResults] = await connection.execute(sql, [userId]);
 
             if (userDataResults.length === 0) {
@@ -124,7 +124,7 @@ const getUserData = async (userId, role) => {
         }
 
         else if (role === 'staff') {
-            const sql = "SELECT s.STAFF_ID AS id, s.STAFF_FULL_NAME AS name, s.STAFF_CONTACT_NUMBER AS contact, u.USER_EMAIL AS email FROM STAFF s INNER JOIN USER u ON s.USER_ID = u.USER_ID WHERE u.USER_ID = ?";
+            const sql = "SELECT s.STAFF_ID AS id, s.STAFF_FULL_NAME AS name, s.STAFF_CONTACT_NUMBER AS contact, u.USER_EMAIL AS email FROM staff s INNER JOIN user u ON s.USER_ID = u.USER_ID WHERE u.USER_ID = ?";
             const [userDataResults] = await connection.execute(sql, [userId]);
             console.log(userDataResults)
             if (userDataResults.length === 0) {
@@ -168,7 +168,7 @@ const fetchUserPermissions = async (userId, role) => {
     try {
 
         if (role === 'customer') {
-            const sql = "SELECT PERMISSION_CATEGORY, PERMISSION_NAME, PERMISSION_ROUTE FROM PERMISSION WHERE PERMISSION_CATEGORY = ? ORDER BY PERMISSION_CATEGORY_ORDER, PERMISSION_ORDER_INDEX";
+            const sql = "SELECT PERMISSION_CATEGORY, PERMISSION_NAME, PERMISSION_ROUTE FROM permission WHERE PERMISSION_CATEGORY = ? ORDER BY PERMISSION_CATEGORY_ORDER, PERMISSION_ORDER_INDEX";
             const [permissionsResult] = await connection.execute(sql, ['Customer']);
 
             if (permissionsResult.length === 0) {
@@ -191,7 +191,7 @@ const fetchUserPermissions = async (userId, role) => {
             // return the hard coded access to admin
         }
         else if (role === 'staff') {
-            const sql = "SELECT PERMISSION.PERMISSION_CATEGORY , PERMISSION.PERMISSION_NAME, PERMISSION.PERMISSION_ROUTE FROM USER INNER JOIN STAFF ON USER.USER_ID = STAFF.USER_ID INNER JOIN ROLEPERMISSION ON STAFF.ROLE_CODE = ROLEPERMISSION.ROLE_CODE INNER JOIN PERMISSION ON ROLEPERMISSION.PERMISSION_CODE = PERMISSION.PERMISSION_CODE WHERE USER.USER_ID = ? ORDER BY PERMISSION_CATEGORY_ORDER, PERMISSION_ORDER_INDEX";
+            const sql = "SELECT permission.PERMISSION_CATEGORY , permission.PERMISSION_NAME, permission.PERMISSION_ROUTE FROM user INNER JOIN staff ON user.USER_ID = staff.USER_ID INNER JOIN rolepermission ON staff.ROLE_CODE = rolepermission.ROLE_CODE INNER JOIN permission ON rolepermission.PERMISSION_CODE = permission.PERMISSION_CODE WHERE user.USER_ID = ? ORDER BY PERMISSION_CATEGORY_ORDER, PERMISSION_ORDER_INDEX";
 
             const [permissionsResult] = await connection.execute(sql, [userId]);
 
@@ -255,7 +255,7 @@ const replaceRoleInRoute = (role, route) => {
 
 const verifyPassword = async (username, password) => {
     try {
-        const sql = "SELECT USER_ID, USER_PASSWORD_HASH, USER_ROLE FROM USER WHERE USER_USERNAME = ?";
+        const sql = "SELECT USER_ID, USER_PASSWORD_HASH, USER_ROLE FROM user WHERE USER_USERNAME = ?";
 
         const [result] = await connection.execute(sql, [username]);
 
@@ -280,11 +280,11 @@ const createUser = async (userData) => {
 
     try {
         const { username, password, email, name, gender, birthdate, contact } = userData;
-        const sql = "INSERT INTO USER (USER_USERNAME, USER_PASSWORD_HASH, USER_EMAIL, USER_ROLE) VALUES (?, ?, ?, ?)";
+        const sql = "INSERT INTO user (USER_USERNAME, USER_PASSWORD_HASH, USER_EMAIL, USER_ROLE) VALUES (?, ?, ?, ?)";
         const [userResult] = await connection.execute(sql, [username, password, email, 'customer']);
 
         const newUserId = userResult.insertId;
-        const sql2 = "INSERT INTO CUSTOMER (USER_ID, CUSTOMER_FULL_NAME, CUSTOMER_GENDER, CUSTOMER_BIRTHDATE, CUSTOMER_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
+        const sql2 = "INSERT INTO customer (USER_ID, CUSTOMER_FULL_NAME, CUSTOMER_GENDER, CUSTOMER_BIRTHDATE, CUSTOMER_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
         const [customerResult] = await connection.execute(sql2, [newUserId, name, gender, birthdate, contact]);
 
         return;
