@@ -35,6 +35,7 @@ router.post('/login', async (req, res) => {
     //check if the user role is staff, then return role permission name along with each role permission features, like above schema
 
     try {
+        console.log('in')
         const { username, password } = req.body;
         //Authenticate user
         const authData = await authentication(username, password);
