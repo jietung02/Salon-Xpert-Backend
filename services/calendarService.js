@@ -1,5 +1,6 @@
 const { response } = require('express');
 const { google, calendar_v3 } = require('googleapis');
+const moment = require('moment');
 
 const scopes = process.env.GOOGLE_SCOPES;
 const scopesArr = scopes.split(',');
@@ -140,9 +141,9 @@ const getEvents = async (calId) => {
 const getSpecialistEvents = async (calId, date) => {
     try {
         
-        const startDate = new Date(date);
-        const startOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
-        const endOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59);
+        const startDate = moment(date);
+        const startOfDay = startDate.clone().startOf('day');
+        const endOfDay = startDate.clone().endOf('day');
         console.log(date)
         console.log(startDate)
         console.log(startOfDay)
