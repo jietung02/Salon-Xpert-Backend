@@ -1,6 +1,6 @@
 const { response } = require('express');
 const { google, calendar_v3 } = require('googleapis');
-const moment = require('moment');
+const moment = require('moment-timezone');
 
 const scopes = process.env.GOOGLE_SCOPES;
 const scopesArr = scopes.split(',');
@@ -14,7 +14,7 @@ const jwtClient = new google.auth.JWT(
     null,
     private_key,
     scopesArr,
-    
+
 );
 
 // const jwtClient = new google.auth.JWT({
@@ -22,7 +22,7 @@ const jwtClient = new google.auth.JWT(
 //     key:private_key,
 //     scopes: scopesArr,
 //     subject: client_email,
-    
+
 // });
 // const jwtClient = new google.auth.GoogleAuth({
 //     keyFile: "config/calendarService.json",
@@ -140,8 +140,8 @@ const getEvents = async (calId) => {
 
 const getSpecialistEvents = async (calId, date) => {
     try {
-        
-        const startDate = moment(date);
+
+        const startDate = moment.tz(date, 'Asia/Kuala_Lumpur');
         const startOfDay = startDate.clone().startOf('day');
         const endOfDay = startDate.clone().endOf('day');
         console.log(date)
