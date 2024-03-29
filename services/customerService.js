@@ -492,9 +492,11 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 return occupiedTimeSlots.hour === slot.hour && occupiedTimeSlots.minute === slot.minute;
             })
         })
-        // console.log(occupiedTimeSlots);
+        console.log('occupied time :');
+        console.log(occupiedTimeSlots);
 
-        // console.log(availableTimeSlots);
+        console.log('available time :');
+        console.log(availableTimeSlots);
 
 
         // console.log(totalDuration)
