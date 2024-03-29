@@ -139,10 +139,12 @@ const getEvents = async (calId) => {
 
 const getSpecialistEvents = async (calId, date) => {
     try {
-        console.log(calId)
+        
         const startDate = new Date(date);
         const startOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
         const endOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59);
+        console.log(date)
+        console.log(startDate)
         console.log(startOfDay)
         console.log(endOfDay)
         //modify here fetch event on the same date and verify  maybe allow 10 minutes overlap
