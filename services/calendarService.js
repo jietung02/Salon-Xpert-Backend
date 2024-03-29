@@ -139,23 +139,27 @@ const getEvents = async (calId) => {
 
 const getSpecialistEvents = async (calId, date) => {
     try {
-        console.log(date)
+        console.log(calId)
         const startDate = new Date(date);
         const startOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 0, 0, 0);
         const endOfDay = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate(), 23, 59, 59);
+        console.log(startOfDay)
+        console.log(endOfDay)
         //modify here fetch event on the same date and verify  maybe allow 10 minutes overlap
         const response = await calendar.events.list({
             // '2839e1657035e3251bbacc4bf5359687038c6dda9eef0cd8b55b3538a93c0339@group.calendar.google.com'
             calendarId: calId,
             timeMin: startOfDay.toISOString(),
             timeMax: endOfDay.toISOString(),
-            // timeZone: 'Asia/Kuala_Lumpur',
+            timeZone: 'Asia/Kuala_Lumpur',
 
         })
 
         if (response.status !== 200) {
             throw new Error('Error Getting Events');
         }
+        console.log('events');
+        console.log(response.data.items)
         return response.data.items;
     } catch (error) {
         console.log(error.message)
