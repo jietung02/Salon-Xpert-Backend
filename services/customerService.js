@@ -357,9 +357,10 @@ const handleDeposit = async (summaryDetails) => {
 
         //CHECK AVAILABILITY
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ ...appointmentDetailsWithDateOnly });
-        // console.log(availableTimeSlots);
+        console.log('Available Time Slots');
+        console.log(availableTimeSlots);
 
-        const appointmentDateTime = momentTz.tz(appointmentDetailsWithDateOnly.selectedTime, 'Asia/Kuala_Lumpur');
+        const appointmentDateTime = moment(appointmentDetailsWithDateOnly.selectedTime);
         const hour = appointmentDateTime.hours();
         const minute = appointmentDateTime.minutes();
         console.log(appointmentDateTime)
