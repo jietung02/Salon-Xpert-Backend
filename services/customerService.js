@@ -164,7 +164,8 @@ const createNewAppointment = async (appointDetails) => {
 
         //START HERE RECALL THE CHECK OVERLAP FUNCTION TO SEE IF THE SELECTED TIMESLOT STILL AVAILABLE, ELSE THROW NEW ERROR
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist, selectedDate });
-        // console.log(availableTimeSlots);
+        console.log('Available Time Slot Create')
+        console.log(availableTimeSlots);
 
         const appointmentDateTime = new Date(selectedTime);
         const hour = appointmentDateTime.getHours();
@@ -181,7 +182,7 @@ const createNewAppointment = async (appointDetails) => {
                 data: null,
             }
         }
-
+        console.log('Available Time Slot Exists')
         console.log(available)
 
         //CALCULATE APPOINTMENT END TIME
@@ -492,11 +493,11 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 return occupiedTimeSlots.hour === slot.hour && occupiedTimeSlots.minute === slot.minute;
             })
         })
-        console.log('occupied time :');
-        console.log(occupiedTimeSlots);
+        // console.log('occupied time :');
+        // console.log(occupiedTimeSlots);
 
-        console.log('available time :');
-        console.log(availableTimeSlots);
+        // console.log('available time :');
+        // console.log(availableTimeSlots);
 
 
         // console.log(totalDuration)
