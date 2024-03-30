@@ -655,7 +655,9 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
                     const selectedDateTime = moment(selectedTime);
                     const selectedHour = selectedDateTime.hour();
                     const selectedMinute = selectedDateTime.minute();
-
+                    console.log(selectedDateTime)
+                    console.log(selectedHour)
+                    console.log(selectedMinute)
                     const allAvailableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist: value.staffId, selectedDate: dateOnly })
                     console.log('Staff ID ' + value.staffId)
                     console.log(allAvailableTimeSlots)
@@ -668,7 +670,7 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
                 }
             })
         )
-        // console.log(available)
+        console.log(available)
         const availableSpecialists = available.filter(value => value.available === true).map(value => {
             return {
                 staffId: value.staffId,
