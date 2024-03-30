@@ -4,7 +4,7 @@ const { convertServicesFormat } = require('../utils/responseFormatter');
 const { hashPassword } = require('./authService');
 const crypto = require('crypto');
 const moment = require('moment');
-const moment = require('moment-timezone');
+const momentTz = require('moment-timezone');
 
 const getAllServices = async () => {
     try {
@@ -168,7 +168,7 @@ const createNewAppointment = async (appointDetails) => {
         console.log('Available Time Slot Create')
         console.log(availableTimeSlots);
 
-        const appointmentDateTime = moment.tz(selectedTime, 'Asia/Kuala_Lumpur');
+        const appointmentDateTime = momentTz.tz(selectedTime, 'Asia/Kuala_Lumpur');
         const hour = appointmentDateTime.hour();
         const minute = appointmentDateTime.minute();
 
@@ -238,7 +238,6 @@ const createNewAppointment = async (appointDetails) => {
                 const [guestUserIdResult] = await connection.execute(sqlUserId, [email]);
                 [{ userId }] = guestUserIdResult;
                 userId = userId;
-                console.log(userId)
             }
 
             const sqlInsertGuest = "INSERT INTO guest (USER_ID, GUEST_FULL_NAME, GUEST_GENDER, GUEST_AGE, GUEST_CONTACT_NUMBER) VALUES (?, ?, ?, ?, ?)";
