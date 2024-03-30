@@ -74,9 +74,9 @@ const getAvailableTimeSlots = async (queryData) => {
     }
 }
 
-const getWorkingTimeSlots = async () => {
+const getWorkingTimeSlots = async (selectedServices) => {
     try {
-        const response = await fetchWorkingHoursTimeSlots();
+        const response = await fetchWorkingHoursTimeSlots(selectedServices);
         return response;
     } catch (err) {
         throw new Error(err.message);

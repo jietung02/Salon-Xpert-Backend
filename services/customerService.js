@@ -595,10 +595,21 @@ const reformatTimeSlots = async (availableTimeSlots) => {
 
 }
 
-const fetchWorkingHoursTimeSlots = async () => {
+const fetchWorkingHoursTimeSlots = async (selectedServices) => {
     try {
         const openHour = parseInt(process.env.WORKING_HOUR);
         const closeHour = parseInt(process.env.CLOSING_HOUR);
+
+        //GET TOTAL SERVICE DURATION
+        const placeholders = selectedServices.map(() => '?').join(', ');
+        const sql2 = `SELECT SUM(SERVICE_DURATION) AS totalDuration FROM service WHERE SERVICE_CODE IN (${placeholders})`;
+
+        const [durationResult] = await connection.execute(sql2, selectedServices);
+
+        if (durationResult.length === 0) {
+            throw new Error('Total Service Duration Not Found');
+        }
+        const [{ totalDuration }] = durationResult;
 
         const allTimeSlots = [];
 
@@ -607,29 +618,44 @@ const fetchWorkingHoursTimeSlots = async () => {
                 allTimeSlots.push({ hour, minute });
             }
         }
-        const formattedTimeSlots = await reformatTimeSlots(allTimeSlots);
+
+        const filterOutofWorkingHour = allTimeSlots.filter((slot) => {
+            const durationInMillisecond = parseInt(totalDuration) * 60000;
+    
+            const endHour = slot.hour + Math.floor((slot.minute + durationInMillisecond / 60000) / 60);
+            const endMinute = (slot.minute + durationInMillisecond / 60000) % 60;
+    
+            if (endHour > closeHour || (endHour === closeHour && endMinute > 0)) {
+                return false;
+            } else {
+                return true;
+            }
+        });
+
+        const formattedTimeSlots = await reformatTimeSlots(filterOutofWorkingHour);
         return formattedTimeSlots;
 
-    } catch (error) {
-        throw new Error('Working Hours are not Defined')
+    } catch (err) {
+        throw new Error(err.message);
     }
 }
 
 const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
     try {
+        console.log('Request Body')
+        console.log(queryData)
         const { specialists, selectedServices, selectedTime } = queryData;
         const dateOnly = selectedTime.slice(0, 10);
         const available = await Promise.all(
             specialists.map(async (value) => {
                 try {
-                    const selectedDateTime = new Date(selectedTime);
-                    const selectedHour = selectedDateTime.getHours();
-                    const selectedMinute = selectedDateTime.getMinutes();
-                    // console.log(selectedHour)
-                    // console.log(selectedMinute)
+                    const selectedDateTime = moment(selectedTime);
+                    const selectedHour = selectedDateTime.hour();
+                    const selectedMinute = selectedDateTime.minute();
+
                     const allAvailableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist: value.staffId, selectedDate: dateOnly })
-                    // console.log(value.staffId)
-                    // console.log(allAvailableTimeSlots)
+                    console.log('Staff ID ' + value.staffId)
+                    console.log(allAvailableTimeSlots)
                     return {
                         ...value,
                         available: (allAvailableTimeSlots.some(slot => slot.hour === selectedHour && slot.minutes.includes(selectedMinute))),
@@ -646,6 +672,7 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
                 staffName: value.staffName,
             }
         });
+        console.log('Available Specialists')
         console.log(availableSpecialists)
         return availableSpecialists;
     } catch (err) {

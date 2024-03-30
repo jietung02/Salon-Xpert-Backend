@@ -118,7 +118,6 @@ router.post('/specialist-timeslots', async (req, res) => {
   try {
 
     const { selectedServices, selectedSpecialist, selectedDate } = req.body;
-    console.log(req.body)
 
     if (!Array.isArray(selectedServices) || selectedServices.length === 0) {
       return res.status(400).json({ error: 'No Services Selected' });
@@ -140,10 +139,14 @@ router.post('/specialist-timeslots', async (req, res) => {
 });
 
 //Fetch All Available Time Slots
-router.get('/working-hours', async (req, res) => {
+router.post('/working-hours', async (req, res) => {
   try {
+    const { selectedServices } = req.body;
 
-    const timeSlots = await getWorkingTimeSlots();
+    if (!Array.isArray(selectedServices) || selectedServices.length === 0) {
+      return res.status(400).json({ error: 'No Services Selected' });
+    }
+    const timeSlots = await getWorkingTimeSlots(selectedServices);
 
     if (timeSlots.length === 0) {
       return res.status(404).json({ error: 'No Timeslot Available' });
@@ -356,7 +359,7 @@ router.put('/payment/pay/:appointmentId', async (req, res) => {
     return res.status(200).json(response);
 
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message})
+    res.status(500).json({ status: 'error', message: error.message })
   }
 });
 
