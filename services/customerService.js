@@ -4,6 +4,7 @@ const { convertServicesFormat } = require('../utils/responseFormatter');
 const { hashPassword } = require('./authService');
 const crypto = require('crypto');
 const moment = require('moment');
+const moment = require('moment-timezone');
 
 const getAllServices = async () => {
     try {
@@ -167,9 +168,9 @@ const createNewAppointment = async (appointDetails) => {
         console.log('Available Time Slot Create')
         console.log(availableTimeSlots);
 
-        const appointmentDateTime = new Date(selectedTime);
-        const hour = appointmentDateTime.getHours();
-        const minute = appointmentDateTime.getMinutes();
+        const appointmentDateTime = moment.tz(selectedTime, 'Asia/Kuala_Lumpur');
+        const hour = appointmentDateTime.hour();
+        const minute = appointmentDateTime.minute();
 
         const available = availableTimeSlots.filter((value) => {
             return value.hour === hour && value.minutes.includes(minute);
@@ -622,10 +623,10 @@ const fetchWorkingHoursTimeSlots = async (selectedServices) => {
 
         const filterOutofWorkingHour = allTimeSlots.filter((slot) => {
             const durationInMillisecond = parseInt(totalDuration) * 60000;
-    
+
             const endHour = slot.hour + Math.floor((slot.minute + durationInMillisecond / 60000) / 60);
             const endMinute = (slot.minute + durationInMillisecond / 60000) % 60;
-    
+
             if (endHour > closeHour || (endHour === closeHour && endMinute > 0)) {
                 return false;
             } else {
