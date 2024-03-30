@@ -264,7 +264,7 @@ const createNewAppointment = async (appointDetails) => {
             throw new Error('No specified Booking from which user');
         }
 
-        const value = [appointmentId, id, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(new Date()).format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
+        const value = [appointmentId, id, selectedSpecialist, moment(appointmentDateTime).format('YYYY-MM-DD HH:mm:ss'), moment(appointmentEndDateTime).format('YYYY-MM-DD HH:mm:ss'), moment().tz('Asia/Kuala_Lumpur').format('YYYY-MM-DD HH:mm:ss'), parseFloat(depositAmount), parseFloat(estimatedPrice), 'PendingDeposit'];
         const [result] = await connection.execute(sql4, value);
         const rowAffected = result.affectedRows;
 
