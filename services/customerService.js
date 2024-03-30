@@ -187,8 +187,8 @@ const createNewAppointment = async (appointDetails) => {
         console.log(available)
 
         //CALCULATE APPOINTMENT END TIME
-        const appointmentEndDateTime = new Date(appointmentDateTime.getTime() + parseInt(totalDuration) * 60000);
-        const currentDateTime = new Date();
+        const appointmentEndDateTime = appointmentDateTime.clone().add(parseInt(totalDuration), 'minutes');
+
         //GENERATE RANDOM APPOINTMENT ID
         const appointmentId = crypto.randomBytes(16).toString('hex');
 
