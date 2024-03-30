@@ -652,7 +652,7 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
         const available = await Promise.all(
             specialists.map(async (value) => {
                 try {
-                    const selectedDateTime = moment(selectedTime);
+                    const selectedDateTime = momentTz.tz(selectedTime, 'Asia/Kuala_Lumpur');
                     const selectedHour = selectedDateTime.hour();
                     const selectedMinute = selectedDateTime.minute();
                     console.log(selectedDateTime)
