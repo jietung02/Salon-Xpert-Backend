@@ -338,7 +338,7 @@ const handleDeposit = async (summaryDetails) => {
             }
 
         }, {})
-
+        console.log('Here ', appointmentDetails.selectedTime);
         //ADD SELECTED DATE
         const appointmentDetailsWithDateOnly = {
             ...appointmentDetails,
@@ -359,11 +359,12 @@ const handleDeposit = async (summaryDetails) => {
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ ...appointmentDetailsWithDateOnly });
         // console.log(availableTimeSlots);
 
-        const appointmentDateTime = new Date(appointmentDetailsWithDateOnly.selectedTime);
-
-        const hour = appointmentDateTime.getHours();
-        const minute = appointmentDateTime.getMinutes();
-
+        const appointmentDateTime = moment.tz(appointmentDetailsWithDateOnly.selectedTime, 'Asia/Kuala_Lumpur');
+        const hour = appointmentDateTime.hours();
+        const minute = appointmentDateTime.minutes();
+        console.log(appointmentDateTime)
+        console.log(hour)
+        console.log(minute)
         const available = availableTimeSlots.filter((value) => {
             return value.hour === hour && value.minutes.includes(minute);
         });

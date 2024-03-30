@@ -172,12 +172,13 @@ const getSpecialistEvents = async (calId, date) => {
 
 const createNewEventinStaffCalendar = async (eventDetails) => {
     try {
-        console.log(eventDetails)
+        
         const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, specialist } = eventDetails;
 
-        const startDateTime = new Date(selectedTime);
-        const endDateTime = new Date(selectedEndTime);
-
+        const startDateTime = moment.tz(selectedTime, 'Asia/Kuala_Lumpur');
+        const endDateTime = moment.tz(selectedEndTime, 'Asia/Kuala_Lumpur');
+        console.log(startDateTime)
+        console.log(endDateTime)
         const response = await calendar.events.insert({
             calendarId: calId,
             sendUpdates: 'all',
