@@ -320,7 +320,7 @@ const handleDeposit = async (summaryDetails) => {
         if (result.length === 0) {
             throw new Error('No Appointment Details Found')
         }
-        console.log('inn')
+
         //REFORMAT APPOINTMENT DETAILS TO BE USED IN TIME SLOT AVAILABILITY CHECK;
         const appointmentDetails = result.reduce((prev, value) => {
             if (!prev.selectedServices) {
@@ -342,7 +342,7 @@ const handleDeposit = async (summaryDetails) => {
         //ADD SELECTED DATE
         const appointmentDetailsWithDateOnly = {
             ...appointmentDetails,
-            selectedDate: appointmentDetails.selectedTime.toISOString().split('T')[0],
+            selectedDate: momentTz.tz(appointmentDetails.selectedTime, 'Asia/Kuala_Lumpur').date(),
         }
 
         //GET STAFF CALENDAR ID
@@ -359,7 +359,7 @@ const handleDeposit = async (summaryDetails) => {
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ ...appointmentDetailsWithDateOnly });
         // console.log(availableTimeSlots);
 
-        const appointmentDateTime = moment.tz(appointmentDetailsWithDateOnly.selectedTime, 'Asia/Kuala_Lumpur');
+        const appointmentDateTime = momentTz.tz(appointmentDetailsWithDateOnly.selectedTime, 'Asia/Kuala_Lumpur');
         const hour = appointmentDateTime.hours();
         const minute = appointmentDateTime.minutes();
         console.log(appointmentDateTime)
