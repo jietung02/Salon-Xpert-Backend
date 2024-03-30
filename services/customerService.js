@@ -476,12 +476,12 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
 
         events.forEach((event) => {
             const { start: { dateTime: startDateTime }, end: { dateTime: endDateTime } } = event;
-            const eventStartTime = new Date(startDateTime);
-            const eventEndTime = new Date(endDateTime);
+            const eventStartTime = moment.tz(startDateTime, 'Asia/Kuala_Lumpur');
+            const eventEndTime = moment.tz(endDateTime, 'Asia/Kuala_Lumpur');
 
-            for (let time = eventStartTime; time < eventEndTime; time.setMinutes(time.getMinutes() + 15)) {
-                const hour = time.getHours();
-                const minute = time.getMinutes();
+            for (let time = eventStartTime.clone(); time.isBefore(eventEndTime); time.add(15, 'minutes')) {
+                const hour = time.hour();
+                const minute = time.minute();
                 occupiedTimeSlots.push({ hour, minute });
             }
 
@@ -921,4 +921,4 @@ const makeFinalPayment = async (appointmentId) => {
     }
 };
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails,makeFinalPayment, };
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, };
