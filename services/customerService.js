@@ -503,16 +503,16 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
 
         //FILTER OUT OUT OF WORKING HOURS AND OVERLAP TIME SLOTS
         const filteredAvailableTimeSlots = availableTimeSlots.filter((slot) => {
-            const dateTime = new Date(selectedDate);
-            dateTime.setHours(slot.hour);
-            dateTime.setMinutes(slot.minute);
-            const closingDateTime = new Date(selectedDate);
-            closingDateTime.setHours(closeHour);
+            const dateTime = moment(selectedDate).startOf('day');
+            dateTime.hour(slot.hour).minute(slot.minute);
+
+            const closingDateTime = moment(selectedDate).startOf('day').hour(closeHour);
+
             const durationInMillisecond = parseInt(totalDuration) * 60000;
 
-            const endDateTime = new Date(dateTime.getTime() + durationInMillisecond);
+            const endDateTime = dateTime.clone().add(durationInMillisecond, 'milliseconds');
 
-            if (endDateTime > closingDateTime) {
+            if (endDateTime.isAfter(closingDateTime)) {
                 return false;
             }
             else {
@@ -521,19 +521,15 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
 
             }
         }).filter((slot) => {
-            const dateTime = new Date(selectedDate);
-            dateTime.setHours(slot.hour);
-            dateTime.setMinutes(slot.minute);
+            const dateTime = moment(selectedDate).startOf('day');
+            dateTime.hour(slot.hour).minute(slot.minute);
 
             const durationInMillisecond = parseInt(totalDuration) * 60000;
 
-            const endDateTime = new Date(dateTime.getTime() + durationInMillisecond);
-            endDateTime.setMinutes(endDateTime.getMinutes() - 15);
-            const endHour = endDateTime.getHours();
-            const endMinute = endDateTime.getMinutes();
+            const endDateTime = dateTime.clone().add(durationInMillisecond, 'milliseconds').subtract(15, 'minutes');
 
 
-            const endDateTimeLastTimeSlot = { hour: endHour, minute: endMinute };
+            const endDateTimeLastTimeSlot = { hour: endDateTime.hour(), minute: endDateTime.minute() };
             const exists = occupiedTimeSlots.find((slotOccupied) => {
                 return (slotOccupied.hour === endDateTimeLastTimeSlot.hour && slotOccupied.minute === endDateTimeLastTimeSlot.minute)
             })
@@ -546,19 +542,17 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
             }
 
         }).filter((slot) => {
-            const dateTime = new Date(selectedDate);
-            dateTime.setHours(slot.hour);
-            dateTime.setMinutes(slot.minute);
+            const dateTime = moment(selectedDate).startOf('day');
+            dateTime.hour(slot.hour).minute(slot.minute);
 
             const durationInMillisecond = parseInt(totalDuration) * 60000;
 
-            const endDateTime = new Date(dateTime.getTime() + durationInMillisecond);
+            const endDateTime = dateTime.clone().add(durationInMillisecond, 'milliseconds');
 
             const overlap = occupiedTimeSlots.map((value) => {
-                const bookedTime = new Date(selectedDate);
-                bookedTime.setHours(value.hour);
-                bookedTime.setMinutes(value.minute);
-                return (endDateTime > bookedTime && dateTime < bookedTime)
+                const bookedTime = moment(selectedDate).startOf('day');
+                bookedTime.hour(value.hour).minute(value.minute);
+                return endDateTime.isAfter(bookedTime) && dateTime.isBefore(bookedTime);
             })
             // console.log(overlap);
 
