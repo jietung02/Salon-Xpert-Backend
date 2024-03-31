@@ -203,7 +203,7 @@ const createNewAppointment = async (appointDetails) => {
         let id = null;
 
         if (username !== null && from === 'customer') {
-            const sql0 = "SELECT CUSTOMER_ID as custId FROM customer INNER JOIN user ON CUSTOMER.USER_ID = USER.USER_ID WHERE USER_USERNAME = ?";
+            const sql0 = "SELECT CUSTOMER_ID as custId FROM customer INNER JOIN user ON customer.USER_ID = user.USER_ID WHERE user.USER_USERNAME = ?";
             const [userIdResult] = await connection.execute(sql0, [username]);
 
             const [{ custId }] = userIdResult;
