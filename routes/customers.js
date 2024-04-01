@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, } = require('../controllers/customerController');
+const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, cancelScheduledAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, fetchDashboardData } = require('../controllers/customerController');
 const { getCalendar, createNewCalendar, checkTimeAvailability, } = require('../services/calendarService');
 
 //This register, appointment new, and general feedback, no need middleware
@@ -97,19 +97,18 @@ router.post('/match-specialists', async (req, res) => {
     const selectedServices = req.body;
 
     if (!Array.isArray(selectedServices) || selectedServices.length === 0) {
-      return res.status(400).json({ error: 'No Services Selected' });
+      return res.status(400).json({ status: 'error', message: 'No Services Selected', data: null });
     }
 
-    const specialists = await getSpecialists(selectedServices);
-    console.log('MAtch')
-    console.log(specialists);
-    if (specialists.length === 0) {
-      return res.status(404).json({ error: 'No Specialists Found' });
+    const response = await getSpecialists(selectedServices);
+
+    if (response.status === 'error') {
+      return res.status(404).json(response);
     }
-    return res.status(200).json(specialists);
+    return res.status(200).json(response);
   } catch (err) {
     console.log(err.message);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ status: 'error', message: err.message, data: null });
   }
 });
 
@@ -196,6 +195,28 @@ router.put('/appointment/cancel/:appointmentId', async (req, res) => {
     }
 
     const response = await cancelAppointment(appoinmentId);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message })
+  }
+
+});
+
+//CANCEL SCHEDULED APPOINTMENT
+router.put('/appointment-scheduled/cancel/:appointmentId', async (req, res) => {
+
+  try {
+    const appoinmentId = req.params.appointmentId;
+
+    if (appoinmentId === undefined || appoinmentId === null) {
+      return res.status(400).json({ status: 'error', message: 'No Appointment ID Provided' });
+    }
+
+    const response = await cancelScheduledAppointment(appoinmentId);
     if (response.status === 'error') {
       return res.status(404).json(response);
     }
@@ -369,10 +390,37 @@ router.post('/payment/:appointmentId', async (req, res) => {
     const appointmentId = req.params.appointmentId;
 
     if (appointmentId === undefined || appointmentId === null) {
-      return res.status(400).json({ status: 'error', message: 'No Appointment ID Provided' });
+      return res.status(400).json({ status: 'error', message: 'No Appointment ID Provided', data: null });
     }
 
     const response = await fetchAppointment(appointmentId);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
+});
+
+router.post('/dashboard-data/:id', async (req, res) => {
+
+  try {
+    console.log(req.body)
+    const userData = req.body;
+
+    if (userData === undefined || userData === null) {
+      return res.status(400).json({ status: 'error', message: 'No ID or Role Provided', data: null });
+    }
+
+    const { id, role } = userData;
+
+    if (id === null || role === null) {
+      return res.status(400).json({ status: 'error', message: 'No ID or Role Provided', data: null });
+    }
+
+    const response = await fetchDashboardData(userData);
     if (response.status === 'error') {
       return res.status(404).json(response);
     }

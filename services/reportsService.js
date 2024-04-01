@@ -176,7 +176,7 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
             }
         }
 
-        const [{totalRevenue}] = totalRevenueResult;
+        const [{ totalRevenue }] = totalRevenueResult;
 
 
         //FETCH EACH SERVICE COUNT AND TOTAL REVENUE GENERATED (BASED PRICE)
@@ -189,13 +189,13 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
                 message: 'No Service Revenue Generated Found',
                 data: null,
             }
-        }   
+        }
 
         //GET TIMESLOT REVENUE DISTRIBUTION
         const sql3 = "SELECT timeSlotTable.timeSlot, COALESCE(SUM(CASE WHEN APPOINTMENT_STATUS = 'Completed' && DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ? THEN APPOINTMENT_FINAL_PRICE ELSE 0 END), 0) AS revenue FROM (SELECT 'Morning' AS timeSlot UNION ALL SELECT 'Afternoon' UNION ALL SELECT 'Evening') AS timeSlotTable LEFT JOIN appointment ON CASE WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 6 AND 11 THEN 'Morning' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 12 AND 17 THEN 'Afternoon' WHEN HOUR(APPOINTMENT_START_DATE_TIME) BETWEEN 18 AND 23 THEN 'Evening' END = timeSlotTable.timeSlot GROUP BY timeSlotTable.timeSlot";
 
         const [timeSlotsResult] = await connection.execute(sql3, [dateFrom, dateTo]);
-        
+
 
         if (timeSlotsResult.length === 0) {
             return {
@@ -206,7 +206,16 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
         }
 
         //FETCH BOOKING TRENDS
-        const sql4 = "SELECT COUNT(CASE WHEN APPOINTMENT_STATUS != 'Cancelled' THEN 1 END) totalActiveAppointments, COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) cancelledAppointments, ROUND((COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' THEN 1 END) / COUNT(*)) * 100, 2) AS cancellationRate FROM appointment WHERE DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
+
+        let sql4 = null;
+        if (process.env.NODE_ENV === 'production') {
+            sql4 = "SELECT COUNT(CASE WHEN APPOINTMENT_STATUS = 'Completed' THEN 1 END) totalCompletedAppointments, COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' || (APPOINTMENT_STATUS = 'Scheduled' && DATE(APPOINTMENT_START_DATE_TIME) < DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Kuala_Lumpur'))) THEN 1 END) cancelledAppointments, ROUND((COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' || (APPOINTMENT_STATUS = 'Scheduled' && DATE(APPOINTMENT_START_DATE_TIME) < DATE(CONVERT_TZ(NOW(), 'UTC', 'Asia/Kuala_Lumpur'))) THEN 1 END) / COUNT(CASE WHEN APPOINTMENT_STATUS = 'Completed' THEN 1 END)) * 100, 2) AS cancellationRate FROM appointment WHERE DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?"
+        }
+        else {
+            sql4 = "SELECT COUNT(CASE WHEN APPOINTMENT_STATUS = 'Completed' THEN 1 END) totalCompletedAppointments, COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' || (APPOINTMENT_STATUS = 'Scheduled' && DATE(APPOINTMENT_START_DATE_TIME) < DATE(NOW())) THEN 1 END) cancelledAppointments, ROUND((COUNT(CASE WHEN APPOINTMENT_STATUS = 'Cancelled' || (APPOINTMENT_STATUS = 'Scheduled' && DATE(APPOINTMENT_START_DATE_TIME) < DATE(NOW())) THEN 1 END) / COUNT(CASE WHEN APPOINTMENT_STATUS = 'Completed' THEN 1 END)) * 100, 2) AS cancellationRate FROM appointment WHERE DATE(APPOINTMENT_END_DATE_TIME) >= ? && DATE(APPOINTMENT_END_DATE_TIME) <= ?";
+
+        }
+
         const [bookingTrendsResult] = await connection.execute(sql4, [dateFrom, dateTo]);
 
         if (bookingTrendsResult.length === 0) {

@@ -1,5 +1,5 @@
 const { connection } = require('../config/dbConnection');
-const { createNewEventinStaffCalendar, getEvents, getSpecialistEvents, checkAvailability, } = require('./calendarService');
+const { createNewEventinStaffCalendar, getEvents, getSpecialistEvents, checkAvailability, deleteEventFromCalendar, } = require('./calendarService');
 const { convertServicesFormat } = require('../utils/responseFormatter');
 const { hashPassword } = require('./authService');
 const crypto = require('crypto');
@@ -35,7 +35,11 @@ const getMatchSpecialists = async (selectedServices) => {
         const [specialistsResult] = await connection.execute(sql, params);
 
         if (specialistsResult.length === 0) {
-            return;
+            return {
+                status: 'error',
+                message: 'No Specialists Found',
+                data: null,
+            };
         }
         const specialists = await convertSpecialistsFormat(specialistsResult);
         return specialists;
@@ -683,7 +687,7 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
     } catch (err) {
         throw new Error(err.message);
     }
-}
+};
 
 const appointmentCancellation = async (appointmentId) => {
     try {
@@ -708,7 +712,46 @@ const appointmentCancellation = async (appointmentId) => {
     }
 
 
-}
+};
+
+const scheduledAppointmentCancellation = async (appointmentId) => {
+    try {
+
+        //GET APPOINTMENT'S STAFF'S CALENDAR ID
+        const sql = "SELECT s.STAFF_CALENDAR_ID AS calendarId FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID WHERE a.APPOINTMENT_ID = ?";
+
+        const [calendarIdResult] = await connection.execute(sql, [appointmentId]);
+
+        if (calendarIdResult.length === 0) {
+            throw new Error('No Calendar ID Found');
+        }
+        const [{ calendarId }] = calendarIdResult;
+
+        // DELETE EVENT FROM GOOGLE CALENDAR
+        await deleteEventFromCalendar(appointmentId, calendarId);
+
+        // SET APPOINTMENT STATUS TO CANCELLED
+        const sql2 = "UPDATE appointment SET APPOINTMENT_STATUS = 'Cancelled' WHERE APPOINTMENT_ID = ?";
+
+        const [result] = await connection.execute(sql2, [appointmentId]);
+        const rowAffected = result.affectedRows;
+
+        if (rowAffected <= 0) {
+            return {
+                status: 'error',
+                message: 'Failed to Cancel the Appointment',
+            }
+        }
+
+        return {
+            status: 'success',
+            message: 'Successfully Cancelled the Appointment',
+        }
+    } catch (err) {
+        throw new Error(err.message);
+    }
+
+};
 
 const fetchAppointmentHistorySSFeedback = async (details) => {
     try {
@@ -947,4 +990,73 @@ const makeFinalPayment = async (appointmentId) => {
     }
 };
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, };
+const fetchCustomerDashboardData = async (userData) => {
+    try {
+        console.log(userData)
+        const { id, role } = userData;
+
+        const sql = "SELECT count(*) AS totalAppointmentsCompleted, (SELECT s.SERVICE_NAME FROM appointment a INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service s ON asvc.SERVICE_CODE = s.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Completed' && a.CUSTOMER_ID = ? GROUP BY s.SERVICE_NAME ORDER BY COUNT(*) DESC LIMIT 1 ) AS topSelectedService FROM appointment a INNER JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID WHERE a.APPOINTMENT_STATUS = 'Completed' && a.CUSTOMER_ID = ?";
+
+
+        const [dashboardDataResult] = await connection.execute(sql, [id, id]);
+
+        if (dashboardDataResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Total Appointment(s) and Selected Service Found',
+                data: null,
+            }
+        }
+
+        const [dashboardData] = dashboardDataResult;
+
+        let sql2 = null;
+
+        if (role === 'customer') {
+            if (process.env.NODE_ENV === 'production') {
+                sql2 = "SELECT a.APPOINTMENT_ID appointmentId, s.STAFF_FULL_NAME staffName, APPOINTMENT_START_DATE_TIME AS startDateTime, APPOINTMENT_END_DATE_TIME AS endDateTime, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Scheduled' && a.CUSTOMER_ID = ? && a.APPOINTMENT_START_DATE_TIME > CONVERT_TZ(NOW(), 'UTC', 'Asia/Kuala_Lumpur') GROUP BY a.APPOINTMENT_ID";
+            }
+            else {
+                sql2 = "SELECT a.APPOINTMENT_ID appointmentId, s.STAFF_FULL_NAME staffName, APPOINTMENT_START_DATE_TIME AS startDateTime, APPOINTMENT_END_DATE_TIME AS endDateTime, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Scheduled' && a.CUSTOMER_ID = ? && a.APPOINTMENT_START_DATE_TIME > NOW() GROUP BY a.APPOINTMENT_ID"
+            }
+        }
+        else if (role === 'guest') {
+            if (process.env.NODE_ENV === 'production') {
+                sql2 = "SELECT a.APPOINTMENT_ID appointmentId, s.STAFF_FULL_NAME staffName, APPOINTMENT_START_DATE_TIME AS startDateTime, APPOINTMENT_END_DATE_TIME AS endDateTime, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Scheduled' && a.GUEST_ID IN (SELECT GUEST_ID FROM guest WHERE USER_ID = ?) && a.APPOINTMENT_START_DATE_TIME > CONVERT_TZ(NOW(), 'UTC', 'Asia/Kuala_Lumpur') GROUP BY a.APPOINTMENT_ID";
+            }
+            else {
+                sql2 = "SELECT a.APPOINTMENT_ID appointmentId, s.STAFF_FULL_NAME staffName, APPOINTMENT_START_DATE_TIME AS startDateTime, APPOINTMENT_END_DATE_TIME AS endDateTime, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Scheduled' && a.GUEST_ID IN (SELECT GUEST_ID FROM guest WHERE USER_ID = ?) && a.APPOINTMENT_START_DATE_TIME > NOW() GROUP BY a.APPOINTMENT_ID"
+            }
+        }
+        else {
+            throw new Error('Invalid Role')
+        }
+
+
+        const [upcomingAppointmentsResult] = await connection.execute(sql2, [id]);
+
+        const convertDateFormat = upcomingAppointmentsResult.map(value => {
+            return {
+                ...value,
+                key: value.appointmentId,
+                startDateTime: moment(value.startDateTime).format('YYYY-MM-DD HH:mm'),
+                endDateTime: moment(value.endDateTime).format('YYYY-MM-DD HH:mm'),
+            }
+        })
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched Customer Dashboard Data',
+            data: {
+                ...dashboardData,
+                upcomingAppointments: convertDateFormat,
+
+            }
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, scheduledAppointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, fetchCustomerDashboardData, };

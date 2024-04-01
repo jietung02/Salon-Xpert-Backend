@@ -1,6 +1,6 @@
 const { calendar } = require('googleapis/build/src/apis/calendar');
 const { userRegistration, } = require('../services/authService');
-const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, } = require('../services/customerService');
+const { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, scheduledAppointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, fetchCustomerDashboardData, } = require('../services/customerService');
 
 const registerUser = async (userData) => {
 
@@ -101,6 +101,15 @@ const cancelAppointment = async (appointmentId) => {
     }
 }
 
+const cancelScheduledAppointment = async (appointmentId) => {
+    try {
+        const response = await scheduledAppointmentCancellation(appointmentId);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
 const payDeposit = async (summaryDetails) => {
     try {
         const response = await handleDeposit(summaryDetails);
@@ -164,4 +173,13 @@ const makePayment = async (appointmentId) => {
     }
 };
 
-module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, };
+const fetchDashboardData = async (userData) => {
+    try {
+        const response = await fetchCustomerDashboardData(userData);
+        return response;
+    } catch (err) {
+        throw new Error(err.message);
+    }
+}
+
+module.exports = { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, checkAvailableSpecialists, cancelAppointment, cancelScheduledAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, fetchDashboardData, };

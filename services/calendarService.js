@@ -172,7 +172,7 @@ const getSpecialistEvents = async (calId, date) => {
 
 const createNewEventinStaffCalendar = async (eventDetails) => {
     try {
-        
+
         const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, specialist } = eventDetails;
 
         const startDateTime = moment.tz(selectedTime, 'Asia/Kuala_Lumpur');
@@ -225,6 +225,19 @@ const createNewEventinStaffCalendar = async (eventDetails) => {
     }
 }
 
+const deleteEventFromCalendar = async (appointmentId, calId) => {
+    const response = await calendar.events.delete({
+        calendarId: calId,
+        eventId: appointmentId,
+    });
+    console.log(response)
+
+    if (response.status !== 204) {
+        throw new Error('Failed to Delete Event from Calendar');
+    }
+
+};
 
 
-module.exports = { getCalendar, createNewCalendar, getEvents, getSpecialistEvents, createNewEventinStaffCalendar, };
+
+module.exports = { getCalendar, createNewCalendar, getEvents, getSpecialistEvents, createNewEventinStaffCalendar, deleteEventFromCalendar, };
