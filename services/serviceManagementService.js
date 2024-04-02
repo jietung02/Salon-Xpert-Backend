@@ -30,7 +30,16 @@ const fetchStaffCalendarId = async (staffId) => {
 
 const fetchAllTodayAppointments = async () => {
     try {
-        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, a.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, COALESCE(a.CUSTOMER_ID, a.GUEST_ID) AS custOrGuestId, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, a.APPOINTMENT_ESTIMATED_PRICE AS estimatedPrice, CASE WHEN a.CUSTOMER_ID IS NOT NULL THEN 'customer' ELSE 'guest' END AS appointmentType FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN guest g ON a.GUEST_ID = g.GUEST_ID WHERE DATE(APPOINTMENT_END_DATE_TIME) = CURDATE() && a.APPOINTMENT_STATUS = 'Scheduled'";
+        let sql = null;
+
+        if (process.env.NODE_ENV === 'production') {
+            sql = "SELECT a.APPOINTMENT_ID AS appointmentId, a.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, COALESCE(a.CUSTOMER_ID, a.GUEST_ID) AS custOrGuestId, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, a.APPOINTMENT_ESTIMATED_PRICE AS estimatedPrice, CASE WHEN a.CUSTOMER_ID IS NOT NULL THEN 'customer' ELSE 'guest' END AS appointmentType FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN guest g ON a.GUEST_ID = g.GUEST_ID WHERE DATE(APPOINTMENT_END_DATE_TIME) >= DATE(CONVERT_TZ(CURDATE(), 'UTC', 'Asia/Kuala_Lumpur')) && a.APPOINTMENT_STATUS = 'Scheduled'";
+        }
+        else {
+            sql = "SELECT a.APPOINTMENT_ID AS appointmentId, a.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, COALESCE(a.CUSTOMER_ID, a.GUEST_ID) AS custOrGuestId, COALESCE(c.CUSTOMER_FULL_NAME, g.GUEST_FULL_NAME) AS name, a.APPOINTMENT_ESTIMATED_PRICE AS estimatedPrice, CASE WHEN a.CUSTOMER_ID IS NOT NULL THEN 'customer' ELSE 'guest' END AS appointmentType FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID LEFT JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID LEFT JOIN guest g ON a.GUEST_ID = g.GUEST_ID WHERE DATE(APPOINTMENT_END_DATE_TIME) >= CURDATE() && a.APPOINTMENT_STATUS = 'Scheduled'";
+
+        }
+        
 
         const [appointmentsResult] = await connection.execute(sql);
 
