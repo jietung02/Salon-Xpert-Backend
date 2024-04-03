@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 
-const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, cancelScheduledAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, fetchDashboardData } = require('../controllers/customerController');
+const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, cancelScheduledAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, fetchDashboardData, fetchAppointmentHistory, } = require('../controllers/customerController');
 const { getCalendar, createNewCalendar, checkTimeAvailability, } = require('../services/calendarService');
 
 //This register, appointment new, and general feedback, no need middleware
@@ -256,8 +256,25 @@ router.put('/appointment/update/:appointmentId', async (req, res) => {
 });
 
 //Appointment History
-router.get('/appointment/history/:customerId', (req, res) => {
-  res.send('Retrieve all history of a customer');
+router.post('/appointment/history/:id', async (req, res) => {
+
+  try {
+
+    const id = req.params.id;
+
+    if (id === undefined || id === null) {
+      return res.status(400).json({ status: 'error', message: 'No ID Provided' });
+    }
+
+    const response = await fetchAppointmentHistory(id);
+    if (response.status === 'error') {
+      return res.status(404).json(response);
+    }
+    return res.status(200).json(response);
+
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message, data: null })
+  }
 });
 
 //Leave Feedback

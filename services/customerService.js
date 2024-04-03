@@ -992,7 +992,6 @@ const makeFinalPayment = async (appointmentId) => {
 
 const fetchCustomerDashboardData = async (userData) => {
     try {
-        console.log(userData)
         const { id, role } = userData;
 
         const sql = "SELECT count(*) AS totalAppointmentsCompleted, (SELECT s.SERVICE_NAME FROM appointment a INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service s ON asvc.SERVICE_CODE = s.SERVICE_CODE WHERE a.APPOINTMENT_STATUS = 'Completed' && a.CUSTOMER_ID = ? GROUP BY s.SERVICE_NAME ORDER BY COUNT(*) DESC LIMIT 1 ) AS topSelectedService FROM appointment a INNER JOIN customer c ON a.CUSTOMER_ID = c.CUSTOMER_ID WHERE a.APPOINTMENT_STATUS = 'Completed' && a.CUSTOMER_ID = ?";
@@ -1057,6 +1056,41 @@ const fetchCustomerDashboardData = async (userData) => {
     } catch (err) {
         throw new Error(err.message);
     }
+};
+
+const fetchAllAppointmentHistory = async (id) => {
+    try {
+
+        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, s.STAFF_FULL_NAME AS staffName, a.APPOINTMENT_END_DATE_TIME AS appointmentDateTime, a.APPOINTMENT_FINAL_PRICE AS finalPrice, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.CUSTOMER_ID = ? && a.APPOINTMENT_STATUS = 'Completed' GROUP BY a.APPOINTMENT_ID";
+
+
+        const [appointmentHistoryResult] = await connection.execute(sql, [id]);
+
+        if (appointmentHistoryResult.length === 0) {
+            return {
+                status: 'error',
+                message: 'No Appointment History Found',
+                data: null,
+            }
+        }
+
+        const reformat = appointmentHistoryResult.map(value => {
+            return {
+                ...value,
+                appointmentDateTime: moment(value.appointmentDateTime).format('YYYY-MM-DD HH:mm'),
+            };
+
+        });
+
+        return {
+            status: 'success',
+            message: 'Successfully Fetched Customer Dashboard Data',
+            data: reformat,
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
 }
 
-module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, scheduledAppointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, fetchCustomerDashboardData, };
+module.exports = { getAllServices, getMatchSpecialists, createNewAppointment, fetchSpecialistAvailableTimeSlots, fetchWorkingHoursTimeSlots, fetchAvailableSpecialistsDuringProvidedTime, appointmentCancellation, scheduledAppointmentCancellation, handleDeposit, fetchAppointmentHistorySSFeedback, submitNewServiceSpecificFeedback, fetchOwnProfileDetails, updateNewProfileDetails, fetchAppointmentDetails, makeFinalPayment, fetchCustomerDashboardData, fetchAllAppointmentHistory, };
