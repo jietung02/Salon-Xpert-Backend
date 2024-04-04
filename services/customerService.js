@@ -571,8 +571,29 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
             }
 
         });
-        // console.log(filteredAvailableTimeSlots);
-        const formattedTimeSlots = await reformatTimeSlots(filteredAvailableTimeSlots);
+
+        // FILTER PAST TIME SLOT
+        let futureTimeSlot = filteredAvailableTimeSlots;
+        const currentDateTimeKL = moment().tz('Asia/Kuala_Lumpur');
+        console.log('selected date : ' + moment(selectedDate).format('YYYY-MM-DD HH:ss'))
+        if (currentDateTimeKL.date() === moment(selectedDate).date()) {
+            const currentHour = currentDateTimeKL.hour();
+            const currentMinute = currentDateTimeKL.minute();
+            futureTimeSlot = futureTimeSlot.filter(slot => {
+                if (slot.hour < currentHour) {
+                    return false;
+                } else if (slot.hour === currentHour) {
+                    // If the hour is current, filter out the past minutes
+                    slot.minutes = slot.minutes.filter(minute => minute > currentMinute);
+                }
+                return true;
+            })
+        }
+
+
+
+        // console.log(futureTimeSlot);
+        const formattedTimeSlots = await reformatTimeSlots(futureTimeSlot);
         return formattedTimeSlots;
     } catch (err) {
         throw new Error(err.message);
@@ -602,7 +623,7 @@ const reformatTimeSlots = async (availableTimeSlots) => {
 
 }
 
-const fetchWorkingHoursTimeSlots = async (selectedServices) => {
+const fetchWorkingHoursTimeSlots = async (selectedServices, selectedDate) => {
     try {
         const openHour = parseInt(process.env.WORKING_HOUR);
         const closeHour = parseInt(process.env.CLOSING_HOUR);
@@ -639,7 +660,24 @@ const fetchWorkingHoursTimeSlots = async (selectedServices) => {
             }
         });
 
-        const formattedTimeSlots = await reformatTimeSlots(filterOutofWorkingHour);
+        let futureTimeSlot = filterOutofWorkingHour;
+        const currentDateTimeKL = moment().tz('Asia/Kuala_Lumpur');
+        console.log('selected date : ' + moment(selectedDate).format('YYYY-MM-DD HH:ss'))
+        if (currentDateTimeKL.date() === moment(selectedDate).date()) {
+            const currentHour = currentDateTimeKL.hour();
+            const currentMinute = currentDateTimeKL.minute();
+            futureTimeSlot = futureTimeSlot.filter(slot => {
+                if (slot.hour < currentHour) {
+                    return false;
+                } else if (slot.hour === currentHour) {
+                    // If the hour is current, filter out the past minutes
+                    slot.minutes = slot.minutes.filter(minute => minute > currentMinute);
+                }
+                return true;
+            })
+        }
+
+        const formattedTimeSlots = await reformatTimeSlots(futureTimeSlot);
         return formattedTimeSlots;
 
     } catch (err) {
