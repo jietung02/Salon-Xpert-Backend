@@ -661,8 +661,10 @@ const fetchWorkingHoursTimeSlots = async (selectedServices, selectedDate) => {
 
         let futureTimeSlot = formattedTimeSlots;
         const currentDateTimeKL = moment().tz('Asia/Kuala_Lumpur');
-        console.log(currentDateTimeKL.date())
-        console.log(moment(selectedDate).date())
+        console.log(currentDateTimeKL.date());
+        console.log(selectedDate);
+        console.log(momentTz(selectedDate,'Asia/Kuala_Lumpur').date());
+        console.log(moment(selectedDate).date());
         if (currentDateTimeKL.date() === moment(selectedDate).date()) {
             const currentHour = currentDateTimeKL.hour();
             const currentMinute = currentDateTimeKL.minute();
