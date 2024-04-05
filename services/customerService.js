@@ -572,10 +572,11 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
 
         });
 
+        const formattedTimeSlots = await reformatTimeSlots(filteredAvailableTimeSlots);
+
         // FILTER PAST TIME SLOT
-        let futureTimeSlot = filteredAvailableTimeSlots;
+        let futureTimeSlot = formattedTimeSlots;
         const currentDateTimeKL = moment().tz('Asia/Kuala_Lumpur');
-        console.log('selected date : ' + moment(selectedDate).format('YYYY-MM-DD HH:ss'))
         if (currentDateTimeKL.date() === moment(selectedDate).date()) {
             const currentHour = currentDateTimeKL.hour();
             const currentMinute = currentDateTimeKL.minute();
@@ -583,18 +584,14 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 if (slot.hour < currentHour) {
                     return false;
                 } else if (slot.hour === currentHour) {
-                    // If the hour is current, filter out the past minutes
-                    slot.minutes = slot.minutes.filter(minute => minute > currentMinute);
+                    // If the hour is current, filter out the past minutes and only can book 30 minutes before
+                    slot.minutes = slot.minutes.filter(minute => minute > currentMinute + 30);
                 }
                 return true;
             })
         }
 
-
-
-        // console.log(futureTimeSlot);
-        const formattedTimeSlots = await reformatTimeSlots(futureTimeSlot);
-        return formattedTimeSlots;
+        return futureTimeSlot;
     } catch (err) {
         throw new Error(err.message);
     }
@@ -660,9 +657,11 @@ const fetchWorkingHoursTimeSlots = async (selectedServices, selectedDate) => {
             }
         });
 
-        let futureTimeSlot = filterOutofWorkingHour;
+        const formattedTimeSlots = await reformatTimeSlots(filterOutofWorkingHour);
+
+        let futureTimeSlot = formattedTimeSlots;
         const currentDateTimeKL = moment().tz('Asia/Kuala_Lumpur');
-        console.log('selected date : ' + moment(selectedDate).format('YYYY-MM-DD HH:ss'))
+
         if (currentDateTimeKL.date() === moment(selectedDate).date()) {
             const currentHour = currentDateTimeKL.hour();
             const currentMinute = currentDateTimeKL.minute();
@@ -670,15 +669,15 @@ const fetchWorkingHoursTimeSlots = async (selectedServices, selectedDate) => {
                 if (slot.hour < currentHour) {
                     return false;
                 } else if (slot.hour === currentHour) {
-                    // If the hour is current, filter out the past minutes
-                    slot.minutes = slot.minutes.filter(minute => minute > currentMinute);
+                    // If the hour is current, filter out the past minutes and only can book 30 minutes before
+                    slot.minutes = slot.minutes.filter(minute => minute > currentMinute + 30);
                 }
                 return true;
             })
         }
 
-        const formattedTimeSlots = await reformatTimeSlots(futureTimeSlot);
-        return formattedTimeSlots;
+
+        return futureTimeSlot;
 
     } catch (err) {
         throw new Error(err.message);
@@ -697,12 +696,8 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
                     const selectedDateTime = momentTz.tz(selectedTime, 'Asia/Kuala_Lumpur');
                     const selectedHour = selectedDateTime.hour();
                     const selectedMinute = selectedDateTime.minute();
-                    console.log(selectedDateTime)
-                    console.log(selectedHour)
-                    console.log(selectedMinute)
+
                     const allAvailableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist: value.staffId, selectedDate: dateOnly })
-                    console.log('Staff ID ' + value.staffId)
-                    console.log(allAvailableTimeSlots)
                     return {
                         ...value,
                         available: (allAvailableTimeSlots.some(slot => slot.hour === selectedHour && slot.minutes.includes(selectedMinute))),
@@ -719,8 +714,6 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
                 staffName: value.staffName,
             }
         });
-        console.log('Available Specialists')
-        console.log(availableSpecialists)
         return availableSpecialists;
     } catch (err) {
         throw new Error(err.message);
