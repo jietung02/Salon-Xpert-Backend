@@ -10,6 +10,8 @@ const userManagementRouter = require('./routes/userManagement');
 const reportsRouter = require('./routes/reports');
 const feedbackManagementRouter = require('./routes/feedbackManagement');
 const serviceManagementRouter = require('./routes/serviceManagement');
+const { sendPaymentEmail } = require('./services/sendEmailService');
+const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
 
@@ -28,7 +30,10 @@ app.use('/service-management', serviceManagementRouter)
 app.listen(8000, () => {
     console.log(`Server is running on port 8000.`);
     console.log(`Connected to the database successfully!`);
+    // sendPaymentEmail('Jie', 'reminders@salon-xpert.pro','testlink');
+    // sendAppointmentReminder();
 });
+
 
 
 //Create a middleware function to check the user id from the request body the user pass in, and check their accessible routes
