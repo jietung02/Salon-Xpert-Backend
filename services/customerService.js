@@ -1,5 +1,6 @@
 const { connection } = require('../config/dbConnection');
 const { createNewEventinStaffCalendar, getEvents, getSpecialistEvents, checkAvailability, deleteEventFromCalendar, } = require('./calendarService');
+const { sendAppointmentConfirmationEmail } = require('../services/sendEmailService');
 const { convertServicesFormat } = require('../utils/responseFormatter');
 const { hashPassword } = require('./authService');
 const crypto = require('crypto');
@@ -342,7 +343,7 @@ const handleDeposit = async (summaryDetails) => {
             }
 
         }, {})
-        console.log('Here ', appointmentDetails.selectedTime);
+        // console.log('Here ', appointmentDetails.selectedTime);
         //ADD SELECTED DATE
         const appointmentDetailsWithDateOnly = {
             ...appointmentDetails,
@@ -361,15 +362,15 @@ const handleDeposit = async (summaryDetails) => {
 
         //CHECK AVAILABILITY
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ ...appointmentDetailsWithDateOnly });
-        console.log('Available Time Slots');
-        console.log(availableTimeSlots);
+        // console.log('Available Time Slots');
+        // console.log(availableTimeSlots);
 
         const appointmentDateTime = moment(appointmentDetailsWithDateOnly.selectedTime);
         const hour = appointmentDateTime.hours();
         const minute = appointmentDateTime.minutes();
-        console.log(appointmentDateTime)
-        console.log(hour)
-        console.log(minute)
+        // console.log(appointmentDateTime)
+        // console.log(hour)
+        // console.log(minute)
         const available = availableTimeSlots.filter((value) => {
             return value.hour === hour && value.minutes.includes(minute);
         });
@@ -382,7 +383,7 @@ const handleDeposit = async (summaryDetails) => {
             }
         }
 
-        console.log(available)
+        // console.log(available)
 
         //CREATE NEW EVENT
         await createNewEventinStaffCalendar({ calendarId, ...summaryDetails });
@@ -390,6 +391,9 @@ const handleDeposit = async (summaryDetails) => {
 
         //UPDATE APPOINTMENT STATUS TO SCHEDULED
         await updateAppointmentStatusToScheduled(summaryDetails.appointmentId);
+
+        //SEND APPOINTMENT CONFIRMATION EMAIL
+        await sendAppointmentConfirmationEmail(summaryDetails.name,summaryDetails.email,summaryDetails.startDateTime);
 
         return {
             status: 'success',

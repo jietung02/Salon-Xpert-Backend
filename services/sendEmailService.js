@@ -9,6 +9,53 @@ const from = process.env.AWS_REGION;
 
 const client = new SESClient({ region: from, credentials: { accessKeyId: smtpUsername, secretAccessKey: secretKey }, });
 
+const sendAppointmentConfirmationEmail = async (name, recipientEmail, startDateTime) => {
+
+    try {
+        let formattedDateTime = moment.tz(startDateTime, 'Asia/Kuala_Lumpur');;
+
+        let input = {
+            Source: 'appointments@salon-xpert.pro',
+            Destination: {
+                ToAddresses: [
+                    recipientEmail,
+                ],
+            },
+            ReplyToAddresses: [],
+            Message: {
+                Subject: {
+                    Charset: 'UTF-8',
+                    Data: `Appointment Confirmation: Your Appointment with SalonXpert`,
+                },
+                Body: {
+                    Html: {
+                        Charset: 'UTF-8',
+                        Data: `<h2>Dear ${name},</h2>
+                        <p>We're excited to confirm your appointment with SalonXpert:</p>
+                        <p><strong>Date & Time:</strong> ${formattedDateTime}</p>
+                        <p>Please make a note of your appointment details and ensure you arrive on time.</p>
+                        <p>If you have any questions or need to make changes to your appointment, don't hesitate to contact us.</p>
+                        <p>We're looking forward to providing you with an exceptional experience!</p>
+                        <br>
+                        <p>Best regards,</p>
+                        <p>SalonXpert Team</p>`,
+                    },
+                },
+            },
+        }
+        const command = new SendEmailCommand(input);
+        const response = await client.send(command);
+
+        if (response.$metadata.httpStatusCode !== 200) {
+            console.error(`Failed to Send Email to ${recipientEmail}`);
+        }
+
+    } catch (err) {
+        throw new Error(err.message);
+    }
+};
+
+
 const sendPaymentEmail = async (name, recipientEmail, paymentLink) => {
     try {
         let input = {
@@ -29,17 +76,22 @@ const sendPaymentEmail = async (name, recipientEmail, paymentLink) => {
                     Html: {
                         Charset: 'UTF-8',
                         Data: `<h2>Dear ${name},</h2>
-                        <p>We wanted to express our gratitude for booking an appointment with us at SalonXpert. We truly appreciate your business and look forward to providing you with an exceptional experience.</p><br />
-                        <p>To complete your booking process, please find the updated final service price for your appointment along with the payment link below:</p> <p><a href="${paymentLink}">Payment Link</a></p><br />
-                        <p>Looking forward to seeing you at SalonXpert!</p> <br /><br /><p>Best regards,</p>
-                        <p>SalonXpert</p>`,
+                        <p>We wanted to express our gratitude for booking an appointment with us at SalonXpert. We truly appreciate your business and look forward to providing you with an exceptional experience.</p>
+                        <br />
+                        <p>To complete your booking process, please find the updated final service price for your appointment along with the payment link below:</p>
+                        <p><a href="${paymentLink}">Payment Link</a></p>
+                        <br />
+                        <p>Looking forward to seeing you at SalonXpert!</p>
+                        <br />
+                        <p>Best regards,</p>
+                        <p>SalonXpert Team</p>`,
                     },
                 },
             },
         }
         const command = new SendEmailCommand(input);
         const response = await client.send(command);
-        
+
         if (response.$metadata.httpStatusCode !== 200) {
             console.error(`Failed to Send Email to ${recipientEmail}`);
         }
@@ -94,7 +146,7 @@ const sendAppointmentReminder = async () => {
                                 <p>We're looking forward to seeing you soon!</p>
                                 <br>
                                 <p>Best regards,</p>
-                                <p>SalonXpert</p>`,
+                                <p>SalonXpert Team</p>`,
                             },
                         },
                     },
@@ -117,7 +169,7 @@ const sendAppointmentReminder = async () => {
 
 }
 
-module.exports = { sendPaymentEmail, sendAppointmentReminder };
+module.exports = { sendAppointmentConfirmationEmail, sendPaymentEmail, sendAppointmentReminder };
 
 
 
