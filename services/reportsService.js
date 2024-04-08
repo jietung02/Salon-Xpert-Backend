@@ -145,7 +145,7 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
             }
         })
 
-        const dateRange = `${moment(dateFrom).format('DD/MM/YYYY')} - ${moment(dateTo).format('DD/MM/YYYY')}`;
+        const dateRange = `${moment(dateFrom).tz('Asia/Kuala_Lumpur').format('DD/MM/YYYY')} - ${moment(dateTo).tz('Asia/Kuala_Lumpur').format('DD/MM/YYYY')}`;
 
         return {
             status: 'success',
@@ -226,7 +226,7 @@ const generateRevenueReport = async (dateFrom, dateTo) => {
             }
         }
 
-        const dateRange = `${moment(dateFrom).format('DD/MM/YYYY')} - ${moment(dateTo).format('DD/MM/YYYY')}`;
+        const dateRange = `${moment(dateFrom).tz('Asia/Kuala_Lumpur').format('DD/MM/YYYY')} - ${moment(dateTo).tz('Asia/Kuala_Lumpur').format('DD/MM/YYYY')}`;
 
         return {
             status: 'success',
