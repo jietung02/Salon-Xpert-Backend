@@ -298,6 +298,7 @@ const createNewAppointment = async (appointDetails) => {
                 appointmentId: appointmentId,
                 name: name,
                 email: email,
+                contact: contact,
                 servicesName: servicesNameString,
                 specialist: staffName,
                 startDateTime: moment(appointmentDateTime).format('YYYY-MM-DD HH:mm'),

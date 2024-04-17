@@ -173,7 +173,7 @@ const getSpecialistEvents = async (calId, date) => {
 const createNewEventinStaffCalendar = async (eventDetails) => {
     try {
 
-        const { calendarId: calId, appointmentId, name, email: emailAddress, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, specialist } = eventDetails;
+        const { calendarId: calId, appointmentId, name, email: emailAddress, contact: contactNo, startDateTime: selectedTime, endDateTime: selectedEndTime, servicesName, specialist } = eventDetails;
 
         const startDateTime = moment.tz(selectedTime, 'Asia/Kuala_Lumpur');
         const endDateTime = moment.tz(selectedEndTime, 'Asia/Kuala_Lumpur');
@@ -185,7 +185,7 @@ const createNewEventinStaffCalendar = async (eventDetails) => {
             requestBody: {
                 id: appointmentId,
                 summary: `Appointment with ${name}`,
-                description: `Schedule Event for ${servicesName} with ${specialist} (Staff).`,
+                description: `Schedule Event for ${servicesName} with ${specialist} (Staff). Please Contact : ${contactNo} if needed`,
                 start: {
                     dateTime: startDateTime,
                     timeZone: 'Asia/Kuala_Lumpur',

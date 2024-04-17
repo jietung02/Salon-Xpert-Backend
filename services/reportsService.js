@@ -99,10 +99,13 @@ const generateStaffPerformanceReport = async (selectedSpecialist) => {
 
 const generateFeedbackReport = async (dateFrom, dateTo) => {
     try {
-        const sql = "SELECT AVG(SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING) AS averageOverallServiceRatings, AVG(SERVICESPECIFICFEEDBACK_CLEANINESS_RATING) AS averageCleanlinessRatings, AVG(SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING) AS averageServiceSatisfactionRatings, AVG(SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING) AS averageCommunicationRatings FROM servicespecificfeedback WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ?";
+        const utcDateFrom = moment.utc(dateFrom).format();
+        const utcDateTo = moment.utc(dateTo).add(1, 'day').format();
 
-        const [feedbackResult] = await connection.execute(sql, [dateFrom, dateTo]);
-
+        const sql = "SELECT ROUND(AVG(SERVICESPECIFICFEEDBACK_OVERALL_SERVICE_RATING),2) AS averageOverallServiceRatings, ROUND(AVG(SERVICESPECIFICFEEDBACK_CLEANINESS_RATING),2) AS averageCleanlinessRatings, ROUND(AVG(SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING),2) AS averageServiceSatisfactionRatings, ROUND(AVG(SERVICESPECIFICFEEDBACK_COMMUNICATION_RATING),2) AS averageCommunicationRatings FROM servicespecificfeedback WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ?";
+        
+        const [feedbackResult] = await connection.execute(sql, [utcDateFrom, utcDateTo]);
+        
         if (feedbackResult.length === 0) {
             return {
                 status: 'error',
@@ -114,8 +117,9 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
 
         //FETCH GROUP CATEGORY COMMENTS
         const sql2 = "SELECT SERVICESPECIFICFEEDBACK_CATEGORY AS category, GROUP_CONCAT(SERVICESPECIFICFEEDBACK_COMMENTS) AS comments FROM servicespecificfeedback WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ? GROUP BY SERVICESPECIFICFEEDBACK_CATEGORY";
-        const [commentsResult] = await connection.execute(sql2, [dateFrom, dateTo]);
+        const [commentsResult] = await connection.execute(sql2, [utcDateFrom, utcDateTo]);
 
+        console.log(commentsResult)
         if (commentsResult.length === 0) {
             return {
                 status: 'error',
@@ -149,7 +153,7 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
 
         return {
             status: 'success',
-            message: 'Successfully Fetched Staff Performance Data',
+            message: 'Successfully Fetched Feedback Data',
             data: {
                 feedbackRatings: { ...feedback, dateRange },
                 comments: reformat,

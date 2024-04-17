@@ -238,8 +238,8 @@ router.put('/appointment/update/:appointmentId', async (req, res) => {
       return res.status(400).json({ status: 'error', message: 'Missing Appointment Details' });
     }
 
-    const { appoinmentId, name, email, servicesName, specialist, startDateTime, endDateTime, estimatedPrice, depositAmount, from, } = summaryDetails;
-    if (appoinmentId === null || name === null || email === null || servicesName === null || specialist === null || startDateTime === null || endDateTime === null || estimatedPrice === null || depositAmount === null || from === null) {
+    const { appoinmentId, name, email, contact, servicesName, specialist, startDateTime, endDateTime, estimatedPrice, depositAmount, from, } = summaryDetails;
+    if (appoinmentId === null || name === null || email === null || contact === null || servicesName === null || specialist === null || startDateTime === null || endDateTime === null || estimatedPrice === null || depositAmount === null || from === null) {
       return res.status(400).json({ status: 'error', message: 'Missing Appointment Details' });
     }
 
