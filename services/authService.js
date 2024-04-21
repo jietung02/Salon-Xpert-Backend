@@ -47,29 +47,6 @@ const userRegistration = async (userData) => {
     }
 };
 
-// const userData = {
-//     isAuthenticated: true,
-//     username: 'Jie',
-//     role: 'staff',
-//     permissions: [
-//         {
-//             rolePermission: 'Service Management',
-//             functions: [{ name: 'Update Service Price', route: '/staff/update-service-price' }, { name: 'View Own Schedule', route: '/staff/view-schedule' }],
-//         },
-//         {
-//             rolePermission: 'Dashboard',
-//             functions: [{ name: 'Dashboard', route: '/staff' }, { name: 'View all Staff Schedules', route: '/staff/staff-schedules' }],
-//         },
-//         {
-//             rolePermission: 'User Management',
-//             functions: [{ name: 'Manage Roles', route: '/staff/roles' }, { name: 'Access Control', route: '/staff/access-control' }],
-//         },
-
-//     ],
-//     token: 'JWT token',
-//     isLoggedOut: false,
-// };
-
 const userAuthentication = async (username, password) => {
     try {
         const [userId, role] = await verifyPassword(username, password);
@@ -135,23 +112,7 @@ const getUserData = async (userId, role) => {
 
             return userData;
         }
-        //ONLY CUSTOMER IS REQUIRED FOR THIS
 
-        // else if (role === 'admin') {
-        //     // admin role will be admin
-        // }
-        // else if (role === 'staff') {
-        //     const sql = "";
-
-        //     const [userDataResults] = await connection.execute(sql, [userId]);
-
-        //     if (userDataResults.length === 0) {
-        //         throw new Error('No User Data Found');
-        //     }
-        //     const userData = await converUserDataFormat(userDataResults, role);
-        //     // console.dir(permissions, { depth: null });
-        //     return userData;
-        // }
         else {
             return null;
             // throw new Error('Invalid Role');
