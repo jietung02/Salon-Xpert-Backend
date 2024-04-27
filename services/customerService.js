@@ -1085,7 +1085,7 @@ const fetchCustomerDashboardData = async (userData) => {
 const fetchAllAppointmentHistory = async (id) => {
     try {
 
-        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, s.STAFF_FULL_NAME AS staffName, a.APPOINTMENT_END_DATE_TIME AS appointmentDateTime, a.APPOINTMENT_FINAL_PRICE AS finalPrice, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.CUSTOMER_ID = ? && a.APPOINTMENT_STATUS = 'Completed' GROUP BY a.APPOINTMENT_ID";
+        const sql = "SELECT a.APPOINTMENT_ID AS appointmentId, s.STAFF_FULL_NAME AS staffName, a.APPOINTMENT_END_DATE_TIME AS appointmentDateTime, a.APPOINTMENT_FINAL_PRICE AS finalPrice, GROUP_CONCAT(svc.SERVICE_NAME SEPARATOR ', ') AS services FROM appointment a INNER JOIN staff s ON a.STAFF_ID = s.STAFF_ID INNER JOIN appointmentservice asvc ON a.APPOINTMENT_ID = asvc.APPOINTMENT_ID INNER JOIN service svc ON asvc.SERVICE_CODE = svc.SERVICE_CODE WHERE a.CUSTOMER_ID = ? && a.APPOINTMENT_STATUS = 'Completed' GROUP BY a.APPOINTMENT_ID ORDER BY a.APPOINTMENT_END_DATE_TIME DESC";
 
 
         const [appointmentHistoryResult] = await connection.execute(sql, [id]);
