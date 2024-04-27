@@ -64,11 +64,17 @@ const convertSpecialistsFormat = async (specialists) => {
 
 }
 
+//Programmer Name : Mr. Dhason Padmakumar, Senior Lecturer & Project Manager, APU, Technology Park Malaysia
+//Program Name : Get Estimated Price
+//Description : The function calculates the estimated price by summing the configured service-based prics with any adjustments based on matching pricing options and rules.
+//First Written On : 20 March 2024
+//Edit Written On : -
+
 const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
     try {
         const { name, email, gender, age, contact, selectedServices, selectedSpecialist, selectedDate, selectedTime, from, username } = appointDetails;
 
-        //GET PRICE OPTIONS WHERE IS SELECTED = 1
+        //GET PRICE OPTIONS WHERE THE PRICE OPTION IS ACTIVE
         const sql = "SELECT PRICEOPTION_CODE AS priceOptionCode FROM priceoption WHERE PRICEOPTION_ACTIVE = 1";
         const [priceOptionsResult] = await connection.execute(sql);
 
@@ -76,21 +82,17 @@ const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
             return null;
         }
 
-
         const priceOptionCodes = priceOptionsResult.map(value => value.priceOptionCode);
 
+        //GETTING THE PRICING RULES THAT MATCH THE ACTIVE PRICE OPTIONS AND SELECTED SERVICES
         const placeholders = priceOptionCodes.map(() => '?').join(', ');
         const placeholders2 = selectedServices.map(() => '?').join(', ');
         const sql2 = `SELECT SERVICE_CODE AS serviceCode, PRICEOPTION_CODE AS priceOptionCode, PRICERULE_OPTION_VALUE AS priceOptionValue, PRICERULE_PRICE_ADJUSTMENT AS priceAdjustment FROM pricerule WHERE PRICEOPTION_CODE IN (${placeholders}) && SERVICE_CODE IN (${placeholders2})`;
-        console.log(sql2)
         const params = [...priceOptionCodes, ...selectedServices];
-        console.log(params)
         const [pricingRulesResult] = await connection.execute(sql2, params);
-        console.log(pricingRulesResult);
 
-        console.log(selectedSpecialist)
+        //SUM THE PRICE ADJUSTMENT WITH THE TOTAL BASED PRICE
         const totalEstimatedPrice = pricingRulesResult.reduce((accum, curr) => {
-            console.log(accum)
             const { serviceCode, priceOptionCode, priceOptionValue, priceAdjustment } = curr;
 
             if (priceOptionCode === 'AGE') {
@@ -113,15 +115,12 @@ const getEstimatedPrice = async (appointDetails, totalBasedPrice) => {
             }
             return accum;
         }, totalBasedPrice);
-        console.log(totalEstimatedPrice)
 
         return totalEstimatedPrice;
 
     } catch (err) {
         throw new Error(err.message);
     }
-
-
 }
 
 const createNewAppointment = async (appointDetails) => {
@@ -394,7 +393,7 @@ const handleDeposit = async (summaryDetails) => {
         await updateAppointmentStatusToScheduled(summaryDetails.appointmentId);
 
         //SEND APPOINTMENT CONFIRMATION EMAIL
-        await sendAppointmentConfirmationEmail(summaryDetails.name,summaryDetails.email,summaryDetails.startDateTime);
+        await sendAppointmentConfirmationEmail(summaryDetails.name, summaryDetails.email, summaryDetails.startDateTime);
 
         return {
             status: 'success',
@@ -444,6 +443,12 @@ const checkTimeAvailability = async (events, startDateTime, endDateTime) => {
 
 }
 
+//Programmer Name : Mr. Dhason Padmakumar, Senior Lecturer & Project Manager, APU, Technology Park Malaysia
+//Program Name : Fetch Specialist Available Time Slots
+//Description : Fetching available time slots for selected specialists based on the chosen services and date.
+//First Written On : 15 March 2024
+//Edit Written On : -
+
 const fetchSpecialistAvailableTimeSlots = async (queryData) => {
     try {
 
@@ -470,7 +475,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
         }
         const [{ totalDuration }] = durationResult;
 
-
         //FETCH THE SPECIFIC STAFF THE SELECTED DATE EVENTS
         const events = await getSpecialistEvents(calendarId, selectedDate)
         const openHour = parseInt(process.env.WORKING_HOUR);
@@ -484,7 +488,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 allTimeSlots.push({ hour, minute });
             }
         }
-        // console.log(allTimeSlots)
 
         events.forEach((event) => {
             const { start: { dateTime: startDateTime }, end: { dateTime: endDateTime } } = event;
@@ -504,14 +507,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 return occupiedTimeSlots.hour === slot.hour && occupiedTimeSlots.minute === slot.minute;
             })
         })
-        // console.log('occupied time :');
-        // console.log(occupiedTimeSlots);
-
-        // console.log('available time :');
-        // console.log(availableTimeSlots);
-
-
-        // console.log(totalDuration)
 
         //FILTER OUT OUT OF WORKING HOURS AND OVERLAP TIME SLOTS
         const filteredAvailableTimeSlots = availableTimeSlots.filter((slot) => {
@@ -529,8 +524,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
             }
             else {
                 return true;
-                //not working trty do it in a reversed way, since 11:45 is still here,  we check if the end time is in the occupied list
-
             }
         }).filter((slot) => {
             const dateTime = moment(selectedDate).startOf('day');
@@ -549,7 +542,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 return false;
             }
             else {
-                // console.log(slot.hour + ' ' + slot.minute + ' ' + endHour + ' ' + endMinute)
                 return true;
             }
 
@@ -566,7 +558,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
                 bookedTime.hour(value.hour).minute(value.minute);
                 return endDateTime.isAfter(bookedTime) && dateTime.isBefore(bookedTime);
             })
-            // console.log(overlap);
 
             if (overlap.some(value => value === true)) {
                 return false;
@@ -577,6 +568,7 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
 
         });
 
+        //REFORMAT TIMESLOTS FORMAT
         const formattedTimeSlots = await reformatTimeSlots(filteredAvailableTimeSlots);
 
         // FILTER PAST TIME SLOT
@@ -600,9 +592,6 @@ const fetchSpecialistAvailableTimeSlots = async (queryData) => {
     } catch (err) {
         throw new Error(err.message);
     }
-
-    // Sample response schema
-    // const schema = [[{ hour: 10, minutes: [0, 30] }, { hour: 12, minutes: [0, 15, 30, 45] }, { hour: 15, minutes: [0, 15] }], { startHour: 10, offHour: 19 }];
 }
 
 const reformatTimeSlots = async (availableTimeSlots) => {
