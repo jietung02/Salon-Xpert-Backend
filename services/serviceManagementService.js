@@ -90,7 +90,6 @@ const updateLastServicePrice = async (selectedAppointment) => {
         }
 
         const [customerDetailsResult] = await connection.execute(sql2, [appointmentId]);
-        console.log(customerDetailsResult)
         const [{ name, email }] = customerDetailsResult;
         if (customerDetailsResult.length === 0) {
             return {

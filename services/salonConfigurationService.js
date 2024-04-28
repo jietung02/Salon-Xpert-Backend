@@ -156,7 +156,7 @@ const fetchAllAvailableRoles = async () => {
         const sql = "SELECT ROLE_CODE AS roleCode, ROLE_NAME AS roleName, ROLE_IS_SERVICE_PROVIDER AS roleIsServiceProvider FROM role";
 
         const [rolesResult] = await connection.execute(sql);
-        console.log(rolesResult)
+
         if (rolesResult.length === 0) {
             return {
                 status: 'error',

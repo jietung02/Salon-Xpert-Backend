@@ -169,8 +169,6 @@ const createNewAppointment = async (appointDetails) => {
 
         //START HERE RECALL THE CHECK OVERLAP FUNCTION TO SEE IF THE SELECTED TIMESLOT STILL AVAILABLE, ELSE THROW NEW ERROR
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ selectedServices, selectedSpecialist, selectedDate });
-        console.log('Available Time Slot Create')
-        console.log(availableTimeSlots);
 
         const appointmentDateTime = momentTz.tz(selectedTime, 'Asia/Kuala_Lumpur');
         const hour = appointmentDateTime.hour();
@@ -187,8 +185,6 @@ const createNewAppointment = async (appointDetails) => {
                 data: null,
             }
         }
-        console.log('Available Time Slot Exists')
-        console.log(available)
 
         //CALCULATE APPOINTMENT END TIME
         const appointmentEndDateTime = appointmentDateTime.clone().add(parseInt(totalDuration), 'minutes');
@@ -223,7 +219,6 @@ const createNewAppointment = async (appointDetails) => {
             const sqlEmailExists = "SELECT COUNT(*) as isExists FROM user WHERE USER_USERNAME = ?";
             const [guestUserExists] = await connection.execute(sqlEmailExists, [email]);
             const [{ isExists }] = guestUserExists;
-            console.log(isExists)
 
             if (isExists === 0) {
                 //INSERT INTO USER TABLE
@@ -343,7 +338,7 @@ const handleDeposit = async (summaryDetails) => {
             }
 
         }, {})
-        // console.log('Here ', appointmentDetails.selectedTime);
+
         //ADD SELECTED DATE
         const appointmentDetailsWithDateOnly = {
             ...appointmentDetails,
@@ -362,15 +357,11 @@ const handleDeposit = async (summaryDetails) => {
 
         //CHECK AVAILABILITY
         const availableTimeSlots = await fetchSpecialistAvailableTimeSlots({ ...appointmentDetailsWithDateOnly });
-        // console.log('Available Time Slots');
-        // console.log(availableTimeSlots);
 
         const appointmentDateTime = moment(appointmentDetailsWithDateOnly.selectedTime);
         const hour = appointmentDateTime.hours();
         const minute = appointmentDateTime.minutes();
-        // console.log(appointmentDateTime)
-        // console.log(hour)
-        // console.log(minute)
+
         const available = availableTimeSlots.filter((value) => {
             return value.hour === hour && value.minutes.includes(minute);
         });
@@ -382,8 +373,6 @@ const handleDeposit = async (summaryDetails) => {
                 data: null,
             }
         }
-
-        // console.log(available)
 
         //CREATE NEW EVENT
         await createNewEventinStaffCalendar({ calendarId, ...summaryDetails });
@@ -419,7 +408,6 @@ const handleDeposit = async (summaryDetails) => {
 
 const updateAppointmentStatusToScheduled = async (appointmentId) => {
     try {
-        console.log(appointmentId)
         const sql = "UPDATE appointment SET APPOINTMENT_STATUS = 'Scheduled' WHERE APPOINTMENT_ID = ?";
 
         const [result] = await connection.execute(sql, [appointmentId]);
@@ -433,14 +421,6 @@ const updateAppointmentStatusToScheduled = async (appointmentId) => {
     } catch (err) {
         throw new Error(err.message);
     }
-}
-
-const checkTimeAvailability = async (events, startDateTime, endDateTime) => {
-    if (events.length === 0) {
-        return true;
-    }
-    console.log(events)
-
 }
 
 //Programmer Name : Mr. Dhason Padmakumar, Senior Lecturer & Project Manager, APU, Technology Park Malaysia
@@ -679,8 +659,6 @@ const fetchWorkingHoursTimeSlots = async (selectedServices, selectedDate) => {
 
 const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
     try {
-        console.log('Request Body')
-        console.log(queryData)
         const { specialists, selectedServices, selectedTime } = queryData;
         const dateOnly = selectedTime.slice(0, 10);
         const available = await Promise.all(
@@ -700,7 +678,7 @@ const fetchAvailableSpecialistsDuringProvidedTime = async (queryData) => {
                 }
             })
         )
-        console.log(available)
+
         const availableSpecialists = available.filter(value => value.available === true).map(value => {
             return {
                 staffId: value.staffId,
@@ -839,7 +817,6 @@ const submitNewServiceSpecificFeedback = async (serviceSpecificFeedbackDetails) 
             throw new Error('Feedback Type Category Not Exists')
         }
 
-        console.log(serviceSpecificFeedbackDetails)
         await connection.query('START TRANSACTION');
 
         //INSERT INTO SERVICESPECIFICFEEDBACK TABLE

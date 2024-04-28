@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 
 const { registerUser, getServices, getSpecialists, createAppointment, getAvailableTimeSlots, getWorkingTimeSlots, checkAvailableSpecialists, cancelAppointment, cancelScheduledAppointment, payDeposit, fetchAppointmentHistoryFeedback, submitServiceSpecificFeedback, fetchProfileDetails, updateProfileDetails, fetchAppointment, makePayment, fetchDashboardData, fetchAppointmentHistory, } = require('../controllers/customerController');
-const { getCalendar, createNewCalendar, checkTimeAvailability, } = require('../services/calendarService');
 
 //This register, appointment new, and general feedback, no need middleware
 
@@ -19,7 +18,6 @@ router.post('/new', async (req, res) => {
 
     return res.status(200).json();
   } catch (err) {
-    console.log(err.message)
     return res.status(400).json({ error: err.message });
   }
 });
@@ -84,7 +82,6 @@ router.get('/services', async (req, res) => {
     }
     return res.status(200).json(services);
   } catch (err) {
-    console.log(err.message);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -107,7 +104,6 @@ router.post('/match-specialists', async (req, res) => {
     }
     return res.status(200).json(response);
   } catch (err) {
-    console.log(err.message);
     return res.status(500).json({ status: 'error', message: err.message, data: null });
   }
 });
@@ -132,7 +128,6 @@ router.post('/specialist-timeslots', async (req, res) => {
     }
     return res.status(200).json(timeSlots);
   } catch (err) {
-    console.log(err.message);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -152,7 +147,6 @@ router.post('/working-hours', async (req, res) => {
     }
     return res.status(200).json(timeSlots);
   } catch (err) {
-    console.log(err.message);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -162,7 +156,6 @@ router.post('/specialists-available', async (req, res) => {
   try {
     const { specialists, selectedServices, selectedTime } = req.body;
 
-    console.log(req.body);
     if (!Array.isArray(specialists) || specialists.length === 0) {
       return res.status(400).json({ error: 'No Specialists in the List' });
     }
@@ -179,7 +172,6 @@ router.post('/specialists-available', async (req, res) => {
     }
     return res.status(200).json(availableSpecialists);
   } catch (err) {
-    console.log(err.message);
     return res.status(500).json({ error: err.message });
   }
 });
@@ -311,7 +303,6 @@ router.post('/feedback/service-specific-feedback/:id', async (req, res) => {
   try {
 
     const details = req.body;
-    console.log(details)
     if (details === undefined || details === null) {
       return res.status(400).json({ status: 'error', message: 'No ID or Role Provided' });
     }
@@ -424,7 +415,6 @@ router.post('/payment/:appointmentId', async (req, res) => {
 router.post('/dashboard-data/:id', async (req, res) => {
 
   try {
-    console.log(req.body)
     const userData = req.body;
 
     if (userData === undefined || userData === null) {

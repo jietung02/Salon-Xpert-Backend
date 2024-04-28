@@ -223,7 +223,6 @@ const saveNewRoleAccess = async (rolePermissions) => {
         }
 
     } catch (err) {
-        console.log(err)
         await connection.query('ROLLBACK');
         throw new Error(err.message);
     }

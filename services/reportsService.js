@@ -57,7 +57,7 @@ const generateStaffPerformanceReport = async (selectedSpecialist) => {
         const sql = "SELECT s.STAFF_ID AS staffId, s.STAFF_FULL_NAME AS staffName, GROUP_CONCAT(svc.SERVICE_NAME) AS totalServices, (SELECT SUM(a2.APPOINTMENT_FINAL_PRICE) FROM appointment a2 WHERE a2.STAFF_ID = s.STAFF_ID && a2.APPOINTMENT_STATUS = 'Completed' GROUP BY a2.STAFF_ID) AS totalSalesGenerated, ROUND(AVG(ssf.SERVICESPECIFICFEEDBACK_SERVICE_SATISFACTION_RATING),2) AS averageClientSatisfactionRatings FROM staff s INNER JOIN appointment a ON s.STAFF_ID = a.STAFF_ID INNER JOIN appointmentservice apt ON a.APPOINTMENT_ID = apt.APPOINTMENT_ID INNER JOIN service svc ON apt.SERVICE_CODE = svc.SERVICE_CODE LEFT JOIN servicespecificfeedback ssf ON a.APPOINTMENT_ID = ssf.APPOINTMENT_ID  WHERE s.STAFF_ID = ? && a.APPOINTMENT_STATUS = 'Completed' GROUP BY s.STAFF_ID";
 
         const [performanceResult] = await connection.execute(sql, [selectedSpecialist]);
-        console.log(performanceResult)
+
         if (performanceResult.length === 0) {
             return {
                 status: 'error',
@@ -77,7 +77,7 @@ const generateStaffPerformanceReport = async (selectedSpecialist) => {
             service,
             count: serviceCounts[service]
         }));
-        console.log(uniqueServices)
+
         const reformat = {
             ...staffPerformance,
             totalServices: uniqueServices,
@@ -119,7 +119,6 @@ const generateFeedbackReport = async (dateFrom, dateTo) => {
         const sql2 = "SELECT SERVICESPECIFICFEEDBACK_CATEGORY AS category, GROUP_CONCAT(SERVICESPECIFICFEEDBACK_COMMENTS) AS comments FROM servicespecificfeedback WHERE DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) >= ? && DATE(SERVICESPECIFICFEEDBACK_CREATED_DATE) <= ? GROUP BY SERVICESPECIFICFEEDBACK_CATEGORY";
         const [commentsResult] = await connection.execute(sql2, [utcDateFrom, utcDateTo]);
 
-        console.log(commentsResult)
         if (commentsResult.length === 0) {
             return {
                 status: 'error',

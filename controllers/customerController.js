@@ -49,7 +49,6 @@ const getSpecialists = async (selectedServices) => {
         const specialists = await getMatchSpecialists(selectedServices);
         return specialists;
     } catch (err) {
-        console.log(err)
         throw new Error(err.message);
     }
 

@@ -103,7 +103,7 @@ const getUserData = async (userId, role) => {
         else if (role === 'staff') {
             const sql = "SELECT s.STAFF_ID AS id, s.STAFF_FULL_NAME AS name, s.STAFF_CONTACT_NUMBER AS contact, u.USER_EMAIL AS email FROM staff s INNER JOIN user u ON s.USER_ID = u.USER_ID WHERE u.USER_ID = ?";
             const [userDataResults] = await connection.execute(sql, [userId]);
-            console.log(userDataResults)
+
             if (userDataResults.length === 0) {
                 throw new Error('No User Data Found');
             }
@@ -119,7 +119,6 @@ const getUserData = async (userId, role) => {
         }
 
     } catch (err) {
-        console.log(err);
         throw new Error(err.message);
     }
 }
@@ -160,7 +159,7 @@ const fetchUserPermissions = async (userId, role) => {
                 throw new Error('No Permission Found');
             }
             const permissions = await convertPermissionsFormat(permissionsResult, role);
-            // console.dir(permissions, { depth: null });
+
             return permissions;
         }
         else {
@@ -168,7 +167,6 @@ const fetchUserPermissions = async (userId, role) => {
         }
 
     } catch (err) {
-        console.log(err);
         throw new Error(err.message);
     }
 }
@@ -232,7 +230,6 @@ const verifyPassword = async (username, password) => {
         return [userId, role];
 
     } catch (err) {
-        console.log(err);
         throw new Error(err.message);
     }
 }

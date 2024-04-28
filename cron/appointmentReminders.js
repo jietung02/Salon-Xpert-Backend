@@ -16,9 +16,3 @@ cron.schedule(`*/15 ${startHour-1}-${closeHour - 1} * * *`, () => {
     console.log('All scheduled times:', scheduledTimes);
 }, {timezone: 'Asia/Kuala_Lumpur'});
 
-
-// cron.schedule(`* * * * *`, () => {
-//     console.log('Running every 15 minutes between start and close hours');
-//     console.log(moment().format('YYYY-MM-DD HH:mm'));
-//     // Add your logic here
-// });

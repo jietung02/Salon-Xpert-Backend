@@ -40,30 +40,6 @@ const calendar = google.calendar({
     auth: jwtClient
 });
 
-
-const getCalendar = async () => {
-
-    calendar.events.list({
-        calendarId: calendar_id,
-        timeMin: (new Date()).toISOString(),
-        maxResults: 10,
-        singleEvents: true,
-        orderBy: 'startTime',
-    }, (error, result) => {
-        if (error) {
-            console.log('in')
-            console.log(JSON.stringify({ error: error }));
-        } else {
-            if (result.data.items.length) {
-                console.log(result.data.items);
-            } else {
-                console.log(JSON.stringify({ message: 'No upcoming events found.' }));
-            }
-        }
-    });
-
-}
-
 const createNewCalendar = async (staffUsername) => {
     try {
 
@@ -144,13 +120,9 @@ const getSpecialistEvents = async (calId, date) => {
         const startDate = moment.tz(date, 'Asia/Kuala_Lumpur');
         const startOfDay = startDate.clone().startOf('day');
         const endOfDay = startDate.clone().endOf('day');
-        console.log(date)
-        console.log(startDate)
-        console.log(startOfDay)
-        console.log(endOfDay)
+
         //modify here fetch event on the same date and verify  maybe allow 10 minutes overlap
         const response = await calendar.events.list({
-            // '2839e1657035e3251bbacc4bf5359687038c6dda9eef0cd8b55b3538a93c0339@group.calendar.google.com'
             calendarId: calId,
             timeMin: startOfDay.toISOString(),
             timeMax: endOfDay.toISOString(),
@@ -161,8 +133,6 @@ const getSpecialistEvents = async (calId, date) => {
         if (response.status !== 200) {
             throw new Error('Error Getting Events');
         }
-        console.log('events');
-        console.log(response.data.items)
         return response.data.items;
     } catch (error) {
         console.log(error.message)
@@ -240,4 +210,4 @@ const deleteEventFromCalendar = async (appointmentId, calId) => {
 
 
 
-module.exports = { getCalendar, createNewCalendar, getEvents, getSpecialistEvents, createNewEventinStaffCalendar, deleteEventFromCalendar, };
+module.exports = { createNewCalendar, getEvents, getSpecialistEvents, createNewEventinStaffCalendar, deleteEventFromCalendar, };
