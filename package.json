@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": ">=18.20"
+  },
   "scripts": {
     "start": "concurrently \"node --env-file=.env index.js\" \"node --env-file=.env cron/appointmentReminders.js\"",
     "dev": "concurrently \"nodemon --env-file=.env index.js\" \"nodemon --env-file=.env cron/appointmentReminders.js\"",
