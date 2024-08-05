@@ -14,6 +14,7 @@ const { sendPaymentEmail } = require('./services/sendEmailService');
 const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
+const port = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
@@ -27,7 +28,7 @@ app.use('/reports', reportsRouter);
 app.use('/feedback-management', feedbackManagementRouter)
 app.use('/service-management', serviceManagementRouter)
 
-app.listen(8000, () => {
+app.listen(port, () => {
     console.log(`Server is running on port 8000.`);
     console.log(`Connected to the database successfully!`);
     // sendPaymentEmail('Jie', 'reminders@salon-xpert.pro','testlink');
