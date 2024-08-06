@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    run-on: [ubuntu-latest]
+    run-on: [self-hosted]
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
@@ -19,7 +19,7 @@ jobs:
         
   deploy:
     needs: build
-    runs-on: [aws-ec2]
+    runs-on: [self-hosted]
     steps:
       - name: Pull image from docker hub
         run: docker pull salonxpertbackend/nodejs-app:latest
