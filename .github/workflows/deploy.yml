@@ -13,17 +13,17 @@ jobs:
       - name: Login to docker hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }} 
       - name: Build docker image
-        run: docker build --build-arg NODE_ENV=${{ secrets.NODE_ENV }} -t salonxpertbackend/nodejs-app .
+        run: docker build --build-arg NODE_ENV=${{ secrets.NODE_ENV }} -t jietung02/nodejs-app .
       - name: Publish image to docker hub
-        run: docker push salonxpertbackend/nodejs-app:latest
+        run: docker push jietung02/nodejs-app:latest
         
   deploy:
     needs: build
     runs-on: [aws-ec2]
     steps:
       - name: Pull image from docker hub
-        run: docker pull salonxpertbackend/nodejs-app:latest
+        run: docker pull jietung02/nodejs-app:latest
       - name: Delete old container
         run: docker rm -f nodejs-app-container
       - name: Run docker container
-        run: docker run -d -p 10000:10000 --name nodejs-app-container salonxpertbackend/nodejs-app
+        run: docker run -d -p 10000:10000 --name nodejs-app-container jietung02/nodejs-app
