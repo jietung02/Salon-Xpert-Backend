@@ -14,7 +14,7 @@ const { sendPaymentEmail } = require('./services/sendEmailService');
 const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5;
 
 app.use(cors());
 app.use(express.json());
@@ -29,7 +29,7 @@ app.use('/feedback-management', feedbackManagementRouter)
 app.use('/service-management', serviceManagementRouter)
 
 try {
-    app.listen(port, '0.0.0.0',() => {
+    app.listen(port,() => {
         console.log(`Node ENV : ${process.env.NODE_ENV}`)
         console.log(`Server is running on port ${process.env.PORT}.`);
         console.log(`Connected to the database successfully!`);
