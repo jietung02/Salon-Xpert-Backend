@@ -5,7 +5,7 @@ const router = express.Router();
 //Configure Service
 router.get('/services', async (req, res) => {
   try {
-
+    console.log("INNNN");
     const response = await fetchAllServices();
     if (response.status === 'error') {
       return res.status(404).json(response);
