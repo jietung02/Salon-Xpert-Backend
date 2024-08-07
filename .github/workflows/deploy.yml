@@ -13,7 +13,7 @@ jobs:
       - name: Login to docker hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }} 
       - name: Build docker image
-        run: docker build --build-arg NODE_ENV=${{ secrets.NODE_ENV }} -t jietung02/nodejs-app .
+        run: docker build --build-arg -t jietung02/nodejs-app .
       - name: Publish image to docker hub
         run: docker push jietung02/nodejs-app:latest
         
