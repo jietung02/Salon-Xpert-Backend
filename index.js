@@ -10,13 +10,14 @@ const userManagementRouter = require('./routes/userManagement');
 const reportsRouter = require('./routes/reports');
 const feedbackManagementRouter = require('./routes/feedbackManagement');
 const serviceManagementRouter = require('./routes/serviceManagement');
-const { sendPaymentEmail } = require('./services/sendEmailService');
-const { sendAppointmentReminder } = require('./services/sendEmailService');
+// const { sendPaymentEmail } = require('./services/sendEmailService');
+// const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
-const port = process.env.PORT || 5;
+const port = process.env.PORT || 5000;
 
-app.use(cors());
+
+app.options('*', cors());
 app.use(express.json());
 
 app.use('/users', usersRouter);
@@ -29,14 +30,14 @@ app.use('/feedback-management', feedbackManagementRouter)
 app.use('/service-management', serviceManagementRouter)
 
 try {
-    app.listen(port,() => {
+    app.listen(port, () => {
         console.log(`Node ENV : ${process.env.NODE_ENV}`)
         console.log(`Server is running on port ${process.env.PORT}.`);
         console.log(`Connected to the database successfully!`);
         // sendPaymentEmail('Jie', 'reminders@salon-xpert.pro','testlink');
         // sendAppointmentReminder();
     });
-    
+
 } catch (error) {
     console.log(error);
 }
