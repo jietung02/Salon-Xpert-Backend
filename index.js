@@ -14,7 +14,7 @@ const { sendPaymentEmail } = require('./services/sendEmailService');
 const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
-const port = process.env.PORT || 8000;
+const port = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
