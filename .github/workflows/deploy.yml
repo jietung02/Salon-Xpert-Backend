@@ -12,7 +12,29 @@ jobs:
         uses: actions/checkout@v3
       - name: Login to docker hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }} 
-      - name: Build docker image
+      - name: Create .env with Github secrets
+        run: |
+          touch .env
+          echo PORT=$PORT >> .env
+          echo CLIENT_URI=$CLIENT_URI >> .env
+          echo MANAGER_EMAIL=$MANAGER_EMAIL >> .env
+          echo DATABASE_HOST=$DATABASE_HOST >> .env
+          echo DATABASE_USER=$DATABASE_USER >> .env
+          echo DATABASE_PASSWORD=$DATABASE_PASSWORD >> .env
+          echo DATABASE_DATABASE=$DATABASE_DATABASE >> .env
+          echo GOOGLE_PRIVATE_KEY=$GOOGLE_PRIVATE_KEY >> .env
+          echo GOOGLE_CLIENT_EMAIL=$GOOGLE_CLIENT_EMAIL >> .env
+          echo GOOGLE_PROJECT_NUMBER=$GOOGLE_PROJECT_NUMBER >> .env
+          echo GOOGLE_SCOPES=$GOOGLE_SCOPES >> .env
+          echo GOOGLE_NEW_CALENDAR_URI=$GOOGLE_NEW_CALENDAR_URI >> .env
+          echo AWS_SES_ACCESS_KEY=$AWS_SES_ACCESS_KEY >> .env
+          echo AWS_SES_SECRET_KEY=$AWS_SES_SECRET_KEY >> .env
+          echo AWS_REGION=$AWS_REGION >> .env
+          echo WORKING_HOUR=$WORKING_HOUR >> .env
+          echo CLOSING_HOUR=$CLOSING_HOUR >> .env
+          echo AGERANGE=$AGERANGE >> .env
+          echo NODE_ENV=$NODE_ENV >> .env
+
         env:
           PORT: ${{secrets.PORT}}
           CLIENT_URI: ${{secrets.CLIENT_URI}}
@@ -33,6 +55,7 @@ jobs:
           CLOSING_HOUR: ${{secrets.CLOSING_HOUR}}
           AGERANGE: ${{secrets.AGERANGE}}
           NODE_ENV: ${{secrets.NODE_ENV}}
+      - name: Build docker image
         run: docker build -t jietung02/nodejs-app .
       - name: Publish image to docker hub
         run: docker push jietung02/nodejs-app:latest
