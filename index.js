@@ -29,7 +29,7 @@ app.use('/feedback-management', feedbackManagementRouter)
 app.use('/service-management', serviceManagementRouter)
 
 try {
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0',() => {
         console.log(`Server is running on port ${process.env.PORT}.`);
         console.log(`Connected to the database successfully!`);
         // sendPaymentEmail('Jie', 'reminders@salon-xpert.pro','testlink');
