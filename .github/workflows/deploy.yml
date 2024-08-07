@@ -69,4 +69,4 @@ jobs:
       - name: Delete old container
         run: docker rm -f nodejs-app-container
       - name: Run docker container
-        run: docker run -d -p 8000:8000 --name nodejs-app-container jietung02/nodejs-app
+        run: docker run -d -p 80:8000 --name nodejs-app-container jietung02/nodejs-app
