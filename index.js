@@ -14,11 +14,10 @@ const serviceManagementRouter = require('./routes/serviceManagement');
 // const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
+app.use(cors);
+
 const port = process.env.PORT || 5000;
 
-app.use(cors({
-    origin: true
-}));
 app.use(express.json());
 
 app.use('/users', usersRouter);
