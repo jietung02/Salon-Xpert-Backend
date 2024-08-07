@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "concurrently \"node index.js\" \"node cron/appointmentReminders.js\"",
+    "start": "concurrently \"node --env-file=.env index.js\" \"node --env-file=.env cron/appointmentReminders.js\"",
     "dev": "concurrently \"nodemon --env-file=.env index.js\" \"nodemon --env-file=.env cron/appointmentReminders.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
