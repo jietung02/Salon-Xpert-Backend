@@ -24,7 +24,6 @@ let corsOptions = function(req, res, next){
 }
 
 app.use(corsOptions);
-app.use(cors());
 
 const port = process.env.PORT || 5000;
 
