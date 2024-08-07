@@ -13,6 +13,26 @@ jobs:
       - name: Login to docker hub
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }} 
       - name: Build docker image
+        env:
+          PORT: ${{secrets.PORT}}
+          CLIENT_URI: ${{secrets.CLIENT_URI}}
+          MANAGER_EMAIL: ${{secrets.MANAGER_EMAIL}}
+          DATABASE_HOST: ${{secrets.DATABASE_HOST}}
+          DATABASE_USER: ${{secrets.DATABASE_USER}}
+          DATABASE_PASSWORD: ${{secrets.DATABASE_PASSWORD}}
+          DATABASE_DATABASE: ${{secrets.DATABASE_DATABASE}}
+          GOOGLE_PRIVATE_KEY: ${{secrets.GOOGLE_PRIVATE_KEY}}
+          GOOGLE_CLIENT_EMAIL: ${{secrets.GOOGLE_CLIENT_EMAIL}}
+          GOOGLE_PROJECT_NUMBER: ${{secrets.GOOGLE_PROJECT_NUMBER}}
+          GOOGLE_SCOPES: ${{secrets.GOOGLE_SCOPES}}
+          GOOGLE_NEW_CALENDAR_URI: ${{secrets.GOOGLE_NEW_CALENDAR_URI}}
+          AWS_SES_ACCESS_KEY: ${{secrets.AWS_SES_ACCESS_KEY}}
+          AWS_SES_SECRET_KEY: ${{secrets.AWS_SES_SECRET_KEY}}
+          AWS_REGION: ${{secrets.AWS_REGION}}
+          WORKING_HOUR: ${{secrets.WORKING_HOUR}}
+          CLOSING_HOUR: ${{secrets.CLOSING_HOUR}}
+          AGERANGE: ${{secrets.AGERANGE}}
+          NODE_ENV: ${{secrets.NODE_ENV}}
         run: docker build -t jietung02/nodejs-app .
       - name: Publish image to docker hub
         run: docker push jietung02/nodejs-app:latest
