@@ -14,8 +14,7 @@ const serviceManagementRouter = require('./routes/serviceManagement');
 // const { sendAppointmentReminder } = require('./services/sendEmailService');
 
 const app = express();
-app.use(corsOptions);
-app.options('*', cors());
+app.use(cors());
 
 const port = process.env.PORT || 5000;
 
